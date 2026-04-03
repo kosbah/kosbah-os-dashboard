@@ -900,12 +900,12 @@
 
     .work-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 12px;
       margin-bottom: 4px
     }
 
-    @media(max-width:500px) {
+    @media(max-width:600px) {
       .work-grid {
         grid-template-columns: 1fr
       }
@@ -947,12 +947,17 @@
       opacity: .72
     }
 
-    .wt-btn-growth {
+    .wt-btn-short {
+      background: var(--green);
+      color: #0F172A
+    }
+
+    .wt-btn-medium {
       background: var(--primary);
       color: #0F172A
     }
 
-    .wt-btn-upwork {
+    .wt-btn-long {
       background: var(--blue);
       color: #fff
     }
@@ -1027,20 +1032,34 @@
       margin-top: 10px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      max-height: 72px;
-      overflow-y: auto
+      gap: 4px
     }
 
     .wt-log-item {
-      font-size: 10px;
-      color: var(--muted);
-      padding: 4px 8px;
+      font-size: 11px;
+      color: var(--text);
+      padding: 5px 10px 5px 12px;
       background: var(--surface);
       border: 1px solid var(--border);
+      border-left: 3px solid var(--accent-color, var(--muted));
       border-radius: 5px;
       display: flex;
-      justify-content: space-between
+      justify-content: space-between;
+      align-items: center
+    }
+
+    .wt-log-item .log-num {
+      font-weight: 800;
+      color: var(--accent-color, var(--muted));
+      margin-right: 6px;
+      font-size: 10px
+    }
+
+    .wt-log-item .log-time {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text);
+      font-variant-numeric: tabular-nums
     }
 
     .week-nav {
@@ -1355,20 +1374,48 @@
     }
 
     .t-sleep {
-      background: #2a1a5e
+      background: #111111
+    }
+
+    .t-family {
+      background: #ef4444
     }
 
     .t-work {
-      background: #2e1515
+      background: #065f46
     }
 
     .t-water {
-      background: #0f2e1a
+      background: #1d4ed8
+    }
+
+    .timeline-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px
+    }
+
+    .timeline-row-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--muted);
+      min-width: 18px;
+      text-align: right;
+      flex-shrink: 0
+    }
+
+    .timeline-outer-wrap {
+      flex: 1
+    }
+
+    .timeline-outer.slim {
+      height: 20px
     }
 
     .hour-axis {
-      display: flex;
-      justify-content: space-between;
+      position: relative;
+      height: 18px;
       font-size: 9px;
       color: var(--muted);
       padding: 2px 0 8px
@@ -1422,7 +1469,7 @@
     }
 
     .ss-val {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 900;
       color: var(--text)
     }
@@ -1684,15 +1731,8 @@
         <div class="sd-sub">Prayers, health, and deep work — do the work now</div>
       </div>
       <div class="row2">
-        <div class="card">
-          <div class="card-label">🕌 Prayer Times</div>
-          <div id="prayer-list">
-            <div class="loading">Fetching…</div>
-          </div>
-          <div id="next-bar" style="display:none"></div>
-        </div>
         <div class="card progress-card">
-          <div class="card-label">📅 Progress</div>
+          <div class="card-label">📅 Month Progress</div>
           <div class="dual-rings">
             <div class="ring-wrap">
               <div class="ring-svg-wrap"><svg viewBox="0 0 112 112">
@@ -1723,15 +1763,22 @@
               <div class="ring-sub" id="mon-sub">— days left</div>
             </div>
           </div>
-          <div class="prog-eid" id="prog-eid">—</div>
+
           <div class="fajr-strip" id="fajr-strip" style="display:none"><span class="fs-label">🌅 Tomorrow's
               Fajr</span><span class="fs-time" id="fajr-time">—:——</span></div>
         </div>
+        <div class="card">
+          <div class="card-label">🕌 Prayer Times</div>
+          <div id="prayer-list">
+            <div class="loading">Fetching…</div>
+          </div>
+          <div id="next-bar" style="display:none"></div>
+        </div>
       </div>
       <div class="card">
-        <div class="card-label">⚡ Health Pack</div>
+        <div class="card-label">💪 Daily Grind</div>
         <div class="pack-sect">
-          <div class="pack-title">Body</div>
+          <div class="pack-title">Body & Mind</div>
           <div class="body-grid" id="body-grid"></div>
         </div>
         <div class="pack-sect">
@@ -1747,20 +1794,49 @@
       </div>
       <div class="card">
         <div class="card-label">⚙️ Work Sessions</div>
+        <div id="work-summary-bar"
+          style="margin-bottom:14px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:12px;">
+          <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+            <span style="display:flex;align-items:center;gap:5px;">⚡ <span id="ws-short-count"
+                style="font-weight:700;color:var(--green)">0</span> <span style="color:var(--muted)">·</span> <span
+                id="ws-short-sum"
+                style="font-weight:800;color:var(--green);padding:2px 8px;border:1px solid rgba(16,185,129,.5);background:rgba(16,185,129,.1);border-radius:6px;">0
+                min</span> <span style="color:var(--muted)">Short</span></span>
+            <span style="display:flex;align-items:center;gap:5px;">🔥 <span id="ws-medium-count"
+                style="font-weight:700;color:var(--primary)">0</span> <span style="color:var(--muted)">·</span> <span
+                id="ws-medium-sum"
+                style="font-weight:800;color:var(--primary);padding:2px 8px;border:1px solid rgba(245,158,11,.5);background:rgba(245,158,11,.1);border-radius:6px;">0
+                min</span> <span style="color:var(--muted)">Medium</span></span>
+            <span style="display:flex;align-items:center;gap:5px;">🚀 <span id="ws-long-count"
+                style="font-weight:700;color:var(--blue)">0</span> <span style="color:var(--muted)">·</span> <span
+                id="ws-long-sum"
+                style="font-weight:800;color:var(--blue);padding:2px 8px;border:1px solid rgba(59,130,246,.5);background:rgba(59,130,246,.1);border-radius:6px;">0
+                min</span> <span style="color:var(--muted)">Long</span></span>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;font-weight:900;color:var(--text);font-size:13px;">
+            <span>Sessions: <span id="ws-total-count">0</span></span><span
+              style="color:var(--border)">·</span><span>Total: <span id="ws-total-sum"
+                style="padding:2px 8px;border:1px solid rgba(249,250,251,.25);background:rgba(249,250,251,.07);border-radius:6px;color:var(--text)">0m</span></span>
+          </div>
+        </div>
         <div class="work-grid">
           <div class="work-type">
-            <div class="wt-label">🚀 Growth Operating</div><button class="wt-btn wt-btn-growth" id="growth-btn">▶ Start
-              Session</button>
-            <div class="session-dots-row" id="growth-dots"></div>
-            <div class="sesh-total" id="growth-total">0 sessions · 0h today</div>
-            <div class="wt-log" id="growth-log"></div>
+            <div class="wt-label">⚡ Short · 30 min</div>
+            <button class="wt-btn wt-btn-short" id="short-btn">▶ Start</button>
+            <div class="session-dots-row" id="short-dots"></div>
+            <div class="wt-log" id="short-log"></div>
           </div>
           <div class="work-type">
-            <div class="wt-label">💼 Upwork</div><button class="wt-btn wt-btn-upwork" id="upwork-btn">▶ Start
-              Session</button>
-            <div class="session-dots-row" id="upwork-dots"></div>
-            <div class="sesh-total" id="upwork-total">0 sessions · 0h today</div>
-            <div class="wt-log" id="upwork-log"></div>
+            <div class="wt-label">🔥 Medium · 50 min</div>
+            <button class="wt-btn wt-btn-medium" id="medium-btn">▶ Start</button>
+            <div class="session-dots-row" id="medium-dots"></div>
+            <div class="wt-log" id="medium-log"></div>
+          </div>
+          <div class="work-type">
+            <div class="wt-label">🚀 Long · 90 min</div>
+            <button class="wt-btn wt-btn-long" id="long-btn">▶ Start</button>
+            <div class="session-dots-row" id="long-dots"></div>
+            <div class="wt-log" id="long-log"></div>
           </div>
         </div>
       </div>
@@ -1796,7 +1872,7 @@
       <div class="card quote-card">
         <div class="qnav"><button class="qnav-btn" onclick="prevQuote()">‹</button><span class="qnum" id="qnum">1 /
             30</span><button class="qnav-btn" onclick="nextQuote()">›</button><span style="flex:1"></span><span
-            style="font-size:10px;color:var(--muted)">Day-anchored · swipe to browse</span></div>
+            style="font-size:10px;color:var(--muted)">Anchored to today's date · swipe to browse</span></div>
         <div class="qtext" id="qtext">Loading…</div>
         <div class="qtags" id="qtags"></div>
       </div>
@@ -1814,7 +1890,7 @@
     db.settings({ merge: true });
     function signInWithGoogle() { showLoader(); const p = new firebase.auth.GoogleAuthProvider(); auth.signInWithPopup(p).catch(e => { console.error('Auth error:', e); hideLoader(); showToast('⚠ Sign-in failed') }) }
     /* ═══ CONFIG ═══ */
-    const CFG = { lat: 31.0883, lon: 31.5969, method: 5, ramadanStart: new Date('2026-02-19'), totalDays: 30, waterCups: 8, waterInterval: 50, weightGoal: 93, weightMilestoneStep: 2, slackWebhook: '', n8nWorkWebhook: '' };
+    const CFG = { lat: 31.0883, lon: 31.5969, method: 5, waterCups: 8, waterInterval: 50, weightGoal: 93, weightMilestoneStep: 2, slackWebhook: '', n8nWorkWebhook: '' };
     const TZ = 'Africa/Cairo';
     function cairoNow() { const n = new Date(); const p = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).formatToParts(n); const g = t => parseInt(p.find(x => x.type === t)?.value || '0', 10); return { h: g('hour'), m: g('minute'), s: g('second') } }
     const toMins = t => { if (!t) return 0; const c = t.split(' ')[0]; const [h, m] = c.split(':').map(Number); return h * 60 + m };
@@ -1828,6 +1904,7 @@
     function fmt12plain(t) { if (!t) return '—'; const c = t.split(' ')[0]; const [h, m] = c.split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}` }
     function fmtSecs(ts) { if (ts <= 0) return '0s'; const h = Math.floor(ts / 3600), m = Math.floor((ts % 3600) / 60), s = ts % 60; if (h > 0) return `${h}h ${m}m ${s}s`; if (m > 0) return `${m}m ${s}s`; return `${s}s` }
     function ordinal(n) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]) }
+    function clockFmt(mins) { if (!mins) return '0m'; const h = Math.floor(mins / 60); const m = mins % 60; if (h > 0 && m > 0) return `${h}h ${m}m`; if (h > 0) return `${h}h`; return `${m}m` }
     function friendlyDate(d = new Date()) { return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }
     function getDaysInMonth(d = new Date()) { return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate() }
     function shortDay(ds) { return new Date(ds + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' }) }
@@ -1842,23 +1919,22 @@
     function metaRef() { return userRef().collection('meta').doc('info') }
 
     /* ═══ MEDICINE DEFAULTS ═══ */
-    const DEFAULT_MEDS = [{ id: 'pill-1', name: 'Pill 1', type: 'pill', dose: '', anchor: 'maghrib', taken: false }, { id: 'pill-23', name: 'Pill 2+3', type: 'pill', dose: '', anchor: 'maghrib+30', taken: false }, { id: 'pill-night', name: '2 Packets', type: 'packet', dose: '', anchor: '23:30', taken: false }, { id: 'pill-suhoor', name: 'Last 2 Pills', type: 'pill', dose: '', anchor: 'fajr-45', taken: false }];
+    const DEFAULT_MEDS = [{ id: 'pill-dose1', name: 'Dose 1', type: 'pill', dose: '4 pills', anchor: '12:30', taken: false }, { id: 'pill-dose2', name: 'Dose 2', type: 'pill', dose: '4 pills', anchor: '00:30', taken: false }];
 
     /* ═══ STATE ═══ */
     let TODAY, SK; let PRAYERS = null, TOMORROW_FAJR = null, HIJRI_DATA = null;
     let DAY_CACHE = {};  // { 'YYYY-MM-DD': stateObj } — in-memory cache for week reads
     let unsubscribeToday = null;
 
-    function refreshToday() { TODAY = getEffectiveDate(); SK = `ros-${TODAY}` }
+    function refreshToday() { TODAY = getEffectiveDate(); SK = `os-${TODAY}` }
 
     function initState() {
       return {
         date: TODAY,
-        body: { cold: false, sun: false, hair: false, workout: false, siwak: false, walk1: false, walk2: false },
+        body: { cold: false, sun: false, breathing: false, vacuum: false, azkar: false, tahseen: false, hair: false, workout: false, siwak: false, walk1: false, walk2: false, quran: false, english: false },
         cups: Array(CFG.waterCups).fill(false),
         meds: JSON.parse(JSON.stringify(DEFAULT_MEDS)),
-        growth: { sessions: 0, log: [] },
-        upwork: { sessions: 0, log: [] },
+        work: { short: { sessions: 0, log: [] }, medium: { sessions: 0, log: [] }, long: { sessions: 0, log: [] } },
         spiritual: { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false }, dua: false },
         expenses: { items: [], totals: { EGP: 0, USD: 0, AED: 0 } },
         weight: { value: null, unit: 'kg', note: '' }
@@ -1872,15 +1948,16 @@
       const s = initState();
       s.date = doc.id;
       // health / body
-      if (d.health) { const h = d.health;['cold', 'sun', 'hair', 'workout', 'siwak', 'walk1', 'walk2'].forEach(k => { s.body[k] = !!h[k] }) }
+      if (d.health) { const h = d.health;['cold', 'sun', 'breathing', 'vacuum', 'azkar', 'tahseen', 'hair', 'workout', 'siwak', 'walk1', 'walk2', 'quran', 'english'].forEach(k => { s.body[k] = !!h[k] }) }
       // water
       if (d.water && Array.isArray(d.water.cups)) s.cups = d.water.cups;
       // medicine — support old 'pills' migration too
       if (d.medicine && Array.isArray(d.medicine.items) && d.medicine.items.length) s.meds = d.medicine.items;
       // work
       if (d.work) {
-        if (d.work.growth) s.growth = { sessions: d.work.growth.sessions || 0, log: d.work.growth.log || [] };
-        if (d.work.upwork) s.upwork = { sessions: d.work.upwork.sessions || 0, log: d.work.upwork.log || [] };
+        if (d.work.short) s.work.short = { sessions: d.work.short.sessions || 0, log: d.work.short.log || [] };
+        if (d.work.medium) s.work.medium = { sessions: d.work.medium.sessions || 0, log: d.work.medium.log || [] };
+        if (d.work.long) s.work.long = { sessions: d.work.long.sessions || 0, log: d.work.long.log || [] };
       }
       // spiritual
       if (d.spiritual) s.spiritual = d.spiritual;
@@ -1895,12 +1972,13 @@
       /* Convert internal state → Firestore doc shape */
       const sc = calcScores(s);
       return {
-        health: { cold: !!s.body.cold, sun: !!s.body.sun, hair: !!s.body.hair, workout: !!s.body.workout, siwak: !!s.body.siwak, walk1: !!s.body.walk1, walk2: !!s.body.walk2 },
+        health: { cold: !!s.body.cold, sun: !!s.body.sun, breathing: !!s.body.breathing, vacuum: !!s.body.vacuum, azkar: !!s.body.azkar, tahseen: !!s.body.tahseen, hair: !!s.body.hair, workout: !!s.body.workout, siwak: !!s.body.siwak, walk1: !!s.body.walk1, walk2: !!s.body.walk2, quran: !!s.body.quran, english: !!s.body.english },
         water: { cups: s.cups, total: s.cups.filter(Boolean).length },
         medicine: { items: s.meds },
         work: {
-          growth: { sessions: s.growth.sessions, totalMins: s.growth.sessions * 170, log: s.growth.log || [] },
-          upwork: { sessions: s.upwork.sessions, totalMins: s.upwork.sessions * 170, log: s.upwork.log || [] }
+          short: { sessions: s.work.short.sessions, totalMins: s.work.short.sessions * 30, log: s.work.short.log || [] },
+          medium: { sessions: s.work.medium.sessions, totalMins: s.work.medium.sessions * 50, log: s.work.medium.log || [] },
+          long: { sessions: s.work.long.sessions, totalMins: s.work.long.sessions * 90, log: s.work.long.log || [] }
         },
         spiritual: s.spiritual || { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false }, dua: false },
         expenses: s.expenses || { items: [], totals: { EGP: 0, USD: 0, AED: 0 } },
@@ -1959,14 +2037,17 @@
     /* ═══ SCORES ═══ */
     function calcScores(s) {
       if (!s) return { health: 0, water: 0, medicine: 0, work: 0, overall: 0 };
-      const bi = ['cold', 'sun', 'hair', 'workout', 'siwak', 'walk1', 'walk2'];
+      const bi = ['cold', 'sun', 'breathing', 'vacuum', 'azkar', 'tahseen', 'hair', 'workout', 'siwak', 'walk1', 'walk2', 'quran', 'english'];
       const bd = bi.filter(id => s.body && s.body[id]).length;
-      const health = Math.round((bd / 7) * 100);
+      const health = Math.round((bd / 13) * 100);
       const water = Math.round(((s.cups || []).filter(Boolean).length / 8) * 100);
       const meds = s.meds || []; const medTotal = meds.length || 1; const medDone = meds.filter(m => m.taken).length;
       const medicine = Math.round((medDone / medTotal) * 100);
-      const gs = s.growth ? s.growth.sessions : 0, us = s.upwork ? s.upwork.sessions : 0;
-      const work = Math.min(100, Math.round(((gs + us) / 3) * 100));
+      const effectiveDay = s.date || getEffectiveDate();
+      const isFriday = new Date(effectiveDay + 'T12:00:00').getDay() === 5;
+      const totalMins = s.work ? (s.work.short.sessions * 30 + s.work.medium.sessions * 50 + s.work.long.sessions * 90) : 0;
+      const actualWork = Math.round((totalMins / 600) * 100);
+      const work = isFriday ? Math.max(100, actualWork) : actualWork;
       const overall = Math.round(health * .3 + water * .2 + medicine * .2 + work * .3);
       return { health, water, medicine, work, overall }
     }
@@ -1987,7 +2068,7 @@
       const sc = calcScores(ST); const wa = await getWeekAvgScores();
       const items = [{ label: 'Work', pct: sc.work, avg: wa.work, color: '#F59E0B' }, { label: 'Health', pct: sc.health, avg: wa.health, color: '#10B981' }, { label: 'Water', pct: sc.water, avg: wa.water, color: '#3B82F6' }, { label: 'Medicine', pct: sc.medicine, avg: wa.medicine, color: '#8B5CF6' }];
       const C = 2 * Math.PI * 26;
-      document.getElementById('score-strip').innerHTML = items.map(it => { const dash = (it.pct / 100) * C; const diff = it.pct - it.avg; const dc = diff > 0 ? 'color:var(--green)' : diff < 0 ? 'color:var(--red)' : 'color:var(--muted)'; const ds = diff > 0 ? `↑ ${diff}%` : diff < 0 ? `↓ ${Math.abs(diff)}%` : '—'; return `<div class="score-ring-card"><svg class="sr-svg" viewBox="0 0 60 60"><circle cx="30" cy="30" r="26" fill="none" stroke="#1F2937" stroke-width="5"/><circle cx="30" cy="30" r="26" fill="none" stroke="${it.color}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${dash.toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 30 30)"/></svg><div class="sr-pct" style="color:${it.color}">${it.pct}%</div><div class="sr-label">${it.label}</div><div class="sr-compare">vs week avg <span style="${dc}">${ds}</span></div></div>` }).join('')
+      document.getElementById('score-strip').innerHTML = items.map(it => { const dash = (Math.min(it.pct, 100) / 100) * C; const diff = it.pct - it.avg; const dc = diff > 0 ? 'color:var(--green)' : diff < 0 ? 'color:var(--red)' : 'color:var(--muted)'; const ds = diff > 0 ? `↑ ${diff}%` : diff < 0 ? `↓ ${Math.abs(diff)}%` : '—'; return `<div class="score-ring-card"><svg class="sr-svg" viewBox="0 0 60 60"><circle cx="30" cy="30" r="26" fill="none" stroke="#1F2937" stroke-width="5"/><circle cx="30" cy="30" r="26" fill="none" stroke="${it.color}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${dash.toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 30 30)"/></svg><div class="sr-pct" style="color:${it.color}">${it.pct}%</div><div class="sr-label">${it.label}</div><div class="sr-compare">vs week avg <span style="${dc}">${ds}</span></div></div>` }).join('')
     }
 
     /* ═══ WEIGHT ═══ */
@@ -2030,9 +2111,9 @@
     }
     async function loadTomorrowFajr() { if (TOMORROW_FAJR) return; try { const data = await fetchTimings(dateStr(1)); TOMORROW_FAJR = data.timings.Fajr; const s = document.getElementById('fajr-strip'); if (s) s.style.display = 'flex'; const f = document.getElementById('fajr-time'); if (f) f.innerHTML = fmt12(TOMORROW_FAJR) } catch { } }
     /* ═══ PROGRESS RINGS ═══ */
-    function renderProgress() { const today = new Date(); today.setHours(0, 0, 0, 0); const start = new Date(CFG.ramadanStart); start.setHours(0, 0, 0, 0); const ramDay = Math.min(Math.max(Math.floor((today - start) / 864e5) + 1, 1), CFG.totalDays); const daysLeft = CFG.totalDays - ramDay; const C = 2 * Math.PI * 44; const hY = HIJRI_DATA ? HIJRI_DATA.year : '1447', hM = HIJRI_DATA ? HIJRI_DATA.month.en : 'Ramadan', hD = HIJRI_DATA ? parseInt(HIJRI_DATA.day, 10) : ramDay, hMD = 30; document.getElementById('ram-arc').setAttribute('stroke-dasharray', `${(hD / hMD * C).toFixed(1)} ${C.toFixed(1)}`); document.getElementById('ram-day').textContent = hD; document.getElementById('ram-of').textContent = `of ${hMD}`; document.getElementById('ram-label').textContent = hM; document.getElementById('ram-sub').textContent = (hMD - hD) > 0 ? `${hMD - hD} day${(hMD - hD) !== 1 ? 's' : ''} left` : 'Last day 🌙'; const isRam = HIJRI_DATA ? parseInt(HIJRI_DATA.month.number) === 9 : true; const eidEl = document.getElementById('prog-eid'); if (isRam) { eidEl.textContent = daysLeft > 0 ? `🎉 Eid in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}` : 'Eid Mubarak! 🌙'; eidEl.style.display = '' } else eidEl.style.display = 'none'; const mD = today.getDate(), mT = getDaysInMonth(today), mL = mT - mD, mN = today.toLocaleDateString('en-US', { month: 'long' }); document.getElementById('mon-arc').setAttribute('stroke-dasharray', `${(mD / mT * C).toFixed(1)} ${C.toFixed(1)}`); document.getElementById('mon-day').textContent = mD; document.getElementById('mon-of').textContent = `of ${mT}`; document.getElementById('mon-label').textContent = mN; document.getElementById('mon-sub').textContent = `${mL} day${mL !== 1 ? 's' : ''} left` }
+    function renderProgress() { const C = 2 * Math.PI * 44; const hD = HIJRI_DATA ? parseInt(HIJRI_DATA.day, 10) : 1; const hM = HIJRI_DATA ? HIJRI_DATA.month.en : '—'; const hMD = 30; document.getElementById('ram-arc').setAttribute('stroke-dasharray', `${(hD / hMD * C).toFixed(1)} ${C.toFixed(1)}`); document.getElementById('ram-day').textContent = hD; document.getElementById('ram-of').textContent = `of ${hMD}`; document.getElementById('ram-label').textContent = hM; document.getElementById('ram-sub').textContent = (hMD - hD) > 0 ? `${hMD - hD} day${(hMD - hD) !== 1 ? 's' : ''} left` : 'Last day 🌙'; const today = new Date(); const mD = today.getDate(), mT = getDaysInMonth(today), mL = mT - mD, mN = today.toLocaleDateString('en-US', { month: 'long' }); document.getElementById('mon-arc').setAttribute('stroke-dasharray', `${(mD / mT * C).toFixed(1)} ${C.toFixed(1)}`); document.getElementById('mon-day').textContent = mD; document.getElementById('mon-of').textContent = `of ${mT}`; document.getElementById('mon-label').textContent = mN; document.getElementById('mon-sub').textContent = `${mL} day${mL !== 1 ? 's' : ''} left` }
     /* ═══ BODY ═══ */
-    const BODY_ITEMS = [{ id: 'cold', icon: '🚿', label: 'Cold shower' }, { id: 'sun', icon: '☀️', label: 'Sun · 20 min' }, { id: 'hair', icon: '💆', label: 'Hair wash' }, { id: 'workout', icon: '💪', label: 'Workout · 10 min' }, { id: 'siwak', icon: '🪥', label: 'Siwak (after Asr)' }, { id: 'walk1', icon: '🚶', label: 'Walk 1 · 10 min' }, { id: 'walk2', icon: '🚶', label: 'Walk 2 · 10 min' }];
+    const BODY_ITEMS = [{ id: 'cold', icon: '🚿', label: 'Cold shower' }, { id: 'sun', icon: '☀️', label: 'Sun · 20 min' }, { id: 'breathing', icon: '🌬️', label: 'Breathing · 4x' }, { id: 'vacuum', icon: '🫁', label: 'Stomach Vacuum · 5x' }, { id: 'azkar', icon: '📿', label: 'Azkar' }, { id: 'tahseen', icon: '🛡️', label: 'Tahseen' }, { id: 'hair', icon: '💆', label: 'Hair wash' }, { id: 'workout', icon: '💪', label: 'Workout · 10–60 min' }, { id: 'siwak', icon: '🪥', label: 'Siwak (after Asr)' }, { id: 'walk1', icon: '🚶', label: 'Walk 1 · 10–30 min' }, { id: 'walk2', icon: '🚶', label: 'Walk 2 · 10–30 min' }, { id: 'quran', icon: '📖', label: 'Quran' }, { id: 'english', icon: '🗣️', label: 'English Practice' }];
     function renderBody() { document.getElementById('body-grid').innerHTML = BODY_ITEMS.map(it => { const d = !!ST.body[it.id]; return `<div class="body-item ${d ? 'checked' : ''}" onclick="toggleBody('${it.id}')"><div class="bi-icon">${it.icon}</div><div class="bi-label">${it.label}</div><div class="bi-dot">${d ? '✓' : ''}</div></div>` }).join('') }
     async function toggleBody(id) { ST.body[id] = !ST.body[id]; renderBody(); await saveState(); showToast(ST.body[id] ? '✓ Done' : 'Unmarked') }
     /* ═══ CUPS ═══ */
@@ -2043,22 +2124,75 @@
       const el = document.getElementById('pills-row');
       el.innerHTML = ST.meds.map((m, i) => {
         const t = getMedTime(m.anchor); const tStr = t ? fmt12(t) : '—';
-        return `<div class="pill-item ${m.taken ? 'taken' : ''}" onclick="toggleMed(${i})"><div class="pi-icon">${m.type === 'packet' ? '📦' : m.type === 'injection' ? '💉' : '💊'}</div><div class="pi-info"><div class="pi-name">${m.name}${m.dose ? ' · ' + m.dose : ''}</div><div class="pi-meta">${tStr} · ${m.anchor}</div></div><div class="pi-badge ${m.taken ? 'taken-b' : 'untaken'}">${m.taken ? '✓ Taken' : 'Tap'}</div><div class="pi-del" onclick="event.stopPropagation();removeMed(${i})" title="Remove">✕</div></div>`
+        return `<div class="pill-item ${m.taken ? 'taken' : ''}" onclick="toggleMed(${i})"><div class="pi-icon">${m.type === 'packet' ? '📦' : m.type === 'injection' ? '💉' : m.type === 'scoop' ? '🥄' : '💊'}</div><div class="pi-info"><div class="pi-name">${m.name}${m.dose ? ' · ' + m.dose : ''}</div><div class="pi-meta">${tStr} · ${m.anchor}</div></div><div class="pi-badge ${m.taken ? 'taken-b' : 'untaken'}">${m.taken ? '✓ Taken' : 'Tap'}</div><div class="pi-del" onclick="event.stopPropagation();removeMed(${i})" title="Remove">✕</div></div>`
       }).join('')
     }
     async function toggleMed(i) { ST.meds[i].taken = !ST.meds[i].taken; renderPills(); await saveState(); showToast(ST.meds[i].taken ? '💊 Taken' : 'Unmarked') }
     async function removeMed(i) { if (!confirm(`Remove "${ST.meds[i].name}"?`)) return; ST.meds.splice(i, 1); renderPills(); await saveState(); showToast('Medicine removed') }
     function openAddMed() {
-      document.getElementById('med-modal-root').innerHTML = `<div class="med-modal-overlay" onclick="if(event.target===this)closeAddMed()"><div class="med-modal"><h3>Add Medicine</h3><label>Name</label><input id="mm-name" placeholder="e.g. Vitamin D"><label>Type</label><select id="mm-type"><option value="pill">💊 Pill</option><option value="packet">📦 Packet</option><option value="scoop">🥄 Scoop</option><option value="injection">💉 Injection</option></select><label>Dose (optional)</label><input id="mm-dose" placeholder="e.g. 500mg"><label>Anchor Time</label><select id="mm-anchor"><option value="maghrib">At Maghrib</option><option value="maghrib+30">Maghrib + 30min</option><option value="fajr-45">Fajr - 45min</option><option value="23:30">11:30 PM (fixed)</option><option value="12:00">12:00 PM (fixed)</option><option value="15:00">3:00 PM (fixed)</option></select><div class="med-modal-btns"><button class="mm-cancel" onclick="closeAddMed()">Cancel</button><button class="mm-save" onclick="saveMed()">Add</button></div></div></div>`
+      document.getElementById('med-modal-root').innerHTML = `<div class="med-modal-overlay" onclick="if(event.target===this)closeAddMed()"><div class="med-modal"><h3>Add Medicine</h3><label>Name</label><input id="mm-name" placeholder="e.g. Vitamin D"><label>Type</label><select id="mm-type"><option value="pill">💊 Pill</option><option value="packet">📦 Packet</option><option value="scoop">🥄 Scoop</option><option value="injection">💉 Injection</option></select><label>Dose (optional)</label><input id="mm-dose" placeholder="e.g. 500mg"><label>Anchor Time</label><select id="mm-anchor"><option value="12:00">12:00 PM</option><option value="12:30">12:30 PM</option><option value="13:00">1:00 PM</option><option value="13:30">1:30 PM</option><option value="14:00">2:00 PM</option><option value="14:30">2:30 PM</option><option value="15:00">3:00 PM</option><option value="15:30">3:30 PM</option><option value="16:00">4:00 PM</option><option value="16:30">4:30 PM</option><option value="17:00">5:00 PM</option><option value="17:30">5:30 PM</option><option value="18:00">6:00 PM</option><option value="18:30">6:30 PM</option><option value="19:00">7:00 PM</option><option value="19:30">7:30 PM</option><option value="20:00">8:00 PM</option><option value="20:30">8:30 PM</option><option value="21:00">9:00 PM</option><option value="21:30">9:30 PM</option><option value="22:00">10:00 PM</option><option value="22:30">10:30 PM</option><option value="23:00">11:00 PM</option><option value="23:30">11:30 PM</option><option value="00:00">12:00 AM</option><option value="00:30">12:30 AM</option><option value="01:00">1:00 AM</option><option value="01:30">1:30 AM</option><option value="02:00">2:00 AM</option></select><div class="med-modal-btns"><button class="mm-cancel" onclick="closeAddMed()">Cancel</button><button class="mm-save" onclick="saveMed()">Add</button></div></div></div>`
     }
     function closeAddMed() { document.getElementById('med-modal-root').innerHTML = '' }
     async function saveMed() { const name = document.getElementById('mm-name').value.trim(); if (!name) { showToast('Enter a name'); return } const med = { id: 'med-' + Date.now(), name, type: document.getElementById('mm-type').value, dose: document.getElementById('mm-dose').value.trim(), anchor: document.getElementById('mm-anchor').value, taken: false }; ST.meds.push(med); renderPills(); await saveState(); closeAddMed(); showToast(`💊 ${name} added`) }
     /* ═══ WORK ═══ */
-    function renderWork() { ['growth', 'upwork'].forEach(type => { const c = ST[type].sessions; const log = ST[type].log || []; const dc = type === 'growth' ? 'done-g' : 'done-u'; const tH = (c * 170 / 60).toFixed(1); const dE = document.getElementById(`${type}-dots`); if (dE) { dE.innerHTML = Array.from({ length: c }, (_, i) => `<div class="sesh-dot ${dc}" title="Session ${i + 1}" onclick="removeSession('${type}',${i})">🔥</div>`).join('') + `<div class="sesh-dot add" onclick="startSession('${type}')">+</div>` } const tE = document.getElementById(`${type}-total`); if (tE) { const cc = type === 'growth' ? 'c-g' : 'c-u'; tE.innerHTML = c === 0 ? 'No sessions yet today' : `<span class="${cc}">${c} session${c !== 1 ? 's' : ''}</span> · <span class="${cc}">${tH}h</span> deep work` } const lE = document.getElementById(`${type}-log`); if (lE) lE.innerHTML = log.slice(-4).reverse().map(e => `<div class="wt-log-item"><span>▶ Started</span><span>${e.time}</span></div>`).join('') }) }
-    async function removeSession(type, idx) { if (ST[type].sessions <= 0) return; ST[type].sessions--; ST[type].log.splice(idx, 1); renderWork(); await saveState(); showToast('Session removed') }
-    async function startSession(type) { const t = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }); ST[type].sessions++; ST[type].log.push({ time: t }); renderWork(); await saveState(); const wh = CFG.n8nWorkWebhook || CFG.slackWebhook; if (wh) fetch(wh, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionType: type === 'growth' ? 'Growth' : 'Upwork', startTime: t }) }).catch(() => { }); showToast(`▶ ${type === 'growth' ? 'Growth' : 'Upwork'} session started`) }
-    document.getElementById('growth-btn').addEventListener('click', () => startSession('growth'));
-    document.getElementById('upwork-btn').addEventListener('click', () => startSession('upwork'));
+    function renderWork() {
+      const WORK_TYPES = [
+        { key: 'short', mins: 30, cls: 'done-g', icon: '⚡', glow: 'rgba(16,185,129,.35)' },
+        { key: 'medium', mins: 50, cls: 'done-g', icon: '🔥', glow: 'rgba(245,158,11,.35)' },
+        { key: 'long', mins: 90, cls: 'done-u', icon: '🚀', glow: 'rgba(59,130,246,.35)' }
+      ];
+      let totalMins = 0;
+      // Build global session list sorted by time for numbering
+      const allSessions = [];
+      WORK_TYPES.forEach(({ key, mins, icon, ring }) => {
+        const log = ST.work[key].log || [];
+        log.forEach((e, i) => allSessions.push({ key, icon, ring, time: e.time, localIdx: i }));
+      });
+      // Sort by time string — convert to comparable 24h value
+      function timeToSortKey(t) {
+        if (!t) return 0;
+        const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (!m) return 0;
+        let h = parseInt(m[1]); const min = parseInt(m[2]); const ap = m[3].toUpperCase();
+        if (ap === 'AM' && h === 12) h = 0;
+        if (ap === 'PM' && h !== 12) h += 12;
+        return h * 60 + min;
+      }
+      allSessions.sort((a, b) => timeToSortKey(a.time) - timeToSortKey(b.time));
+      // Map each (key, localIdx) → global number
+      const globalNumMap = {};
+      allSessions.forEach((s, gi) => { globalNumMap[`${s.key}-${s.localIdx}`] = gi + 1; });
+
+      WORK_TYPES.forEach(({ key, mins, cls, icon, glow, ring }) => {
+        const w = ST.work[key]; const c = w.sessions; const log = w.log || [];
+        totalMins += c * mins;
+        const dE = document.getElementById(`${key}-dots`);
+        if (dE) dE.innerHTML = Array.from({ length: c }, (_, i) => `<div class="sesh-dot" title="Session ${i + 1} · click to remove" onclick="removeSession('${key}',${i})" style="width:46px;height:46px;background:${glow.replace('.35', '.15')};border:2px solid ${ring};box-shadow:0 0 10px ${glow};font-size:20px;">${icon}</div>`).join('') + `<div class="sesh-dot add" onclick="startSession('${key}')">+</div>`;
+        const lE = document.getElementById(`${key}-log`);
+        if (lE) lE.innerHTML = log.map((e, i) => {
+          const localIdx = i;
+          const gNum = globalNumMap[`${key}-${localIdx}`] || '?';
+          return `<div class="wt-log-item" style="--accent-color:${ring}"><span><span class="log-num">#${gNum}</span>${icon} ${key.charAt(0).toUpperCase() + key.slice(1)}</span><span class="log-time">${e.time}</span></div>`;
+        }).reverse().join('');
+      });
+      const sm = ST.work.short.sessions * 30;
+      const mm = ST.work.medium.sessions * 50;
+      const lm = ST.work.long.sessions * 90;
+      const ss = document.getElementById('ws-short-sum'); if (ss) ss.textContent = sm >= 60 ? clockFmt(sm) : sm + ' min';
+      const ms = document.getElementById('ws-medium-sum'); if (ms) ms.textContent = mm >= 60 ? clockFmt(mm) : mm + ' min';
+      const ls = document.getElementById('ws-long-sum'); if (ls) ls.textContent = lm >= 60 ? clockFmt(lm) : lm + ' min';
+      const ts = document.getElementById('ws-total-sum'); if (ts) ts.textContent = clockFmt(sm + mm + lm);
+      const tc = document.getElementById('ws-total-count'); if (tc) tc.textContent = ST.work.short.sessions + ST.work.medium.sessions + ST.work.long.sessions;
+      const sc2 = document.getElementById('ws-short-count'); if (sc2) sc2.textContent = ST.work.short.sessions;
+      const mc2 = document.getElementById('ws-medium-count'); if (mc2) mc2.textContent = ST.work.medium.sessions;
+      const lc2 = document.getElementById('ws-long-count'); if (lc2) lc2.textContent = ST.work.long.sessions;
+    }
+    async function removeSession(type, idx) { if (ST.work[type].sessions <= 0) return; ST.work[type].sessions--; ST.work[type].log.splice(idx, 1); renderWork(); await saveState(); showToast('Session removed') }
+    async function startSession(type) { const t = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }); ST.work[type].sessions++; ST.work[type].log.push({ time: t }); renderWork(); await saveState(); const wh = CFG.n8nWorkWebhook || CFG.slackWebhook; if (wh) fetch(wh, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionType: type, startTime: t }) }).catch(() => { }); showToast(`▶ ${type.charAt(0).toUpperCase() + type.slice(1)} session started`) }
+    document.getElementById('short-btn').addEventListener('click', () => startSession('short'));
+    document.getElementById('medium-btn').addEventListener('click', () => startSession('medium'));
+    document.getElementById('long-btn').addEventListener('click', () => startSession('long'));
+    document.getElementById('wc-input').addEventListener('keydown', e => { if (e.key === 'Enter') saveWeight(); });
     /* ═══ YOUR WEEK ═══ */
     let weekOff = 0, selDay = null;
     function getWeekBounds(off = 0) { const ref = new Date(TODAY + 'T12:00:00'); ref.setDate(ref.getDate() + (off * 7)); const dow = ref.getDay(); const mon = new Date(ref); mon.setDate(ref.getDate() - ((dow + 6) % 7)); const days = []; for (let i = 0; i < 7; i++) { const d = new Date(mon); d.setDate(mon.getDate() + i); days.push(d.toISOString().slice(0, 10)) } return { days, monStr: days[0], sunStr: days[6] } }
@@ -2074,14 +2208,14 @@
     }
     async function changeWeek(dir) { weekOff += dir; if (weekOff > 0) weekOff = 0; selDay = null; await renderWeekSection() }
     async function selectDay(d) { selDay = selDay === d ? null : d; await renderWeekSection() }
-    function renderDayDetail() { const c = document.getElementById('day-detail-container'); if (!selDay) { c.innerHTML = ''; return } const st = DAY_CACHE[selDay]; if (!st) { c.innerHTML = `<div class="day-detail"><div class="dd-header"><span>${shortDate(selDay)} — No data</span><span class="dd-close" onclick="selectDay('${selDay}')">✕</span></div></div>`; return } const sc = calcScores(st); const w = getWeight(selDay); const bd = BODY_ITEMS.filter(it => st.body && st.body[it.id]).length; const cd = (st.cups || []).filter(Boolean).length; const meds = st.meds || []; const md = meds.filter(m => m.taken).length; const gS = st.growth ? st.growth.sessions : 0, uS = st.upwork ? st.upwork.sessions : 0; c.innerHTML = `<div class="day-detail"><div class="dd-header"><span>📊 ${shortDate(selDay)} · Overall ${sc.overall}%</span><span class="dd-close" onclick="selectDay('${selDay}')">✕</span></div><div class="dd-grid"><div class="dd-item"><div class="dd-item-label">Health</div><div class="dd-item-val" style="color:var(--green)">${bd}/7 · ${sc.health}%</div></div><div class="dd-item"><div class="dd-item-label">Water</div><div class="dd-item-val" style="color:var(--blue)">${cd}/8 · ${sc.water}%</div></div><div class="dd-item"><div class="dd-item-label">Medicine</div><div class="dd-item-val" style="color:var(--purple)">${md}/${meds.length} · ${sc.medicine}%</div></div><div class="dd-item"><div class="dd-item-label">Work</div><div class="dd-item-val" style="color:var(--primary)">${gS}G + ${uS}U · ${sc.work}%</div></div><div class="dd-item"><div class="dd-item-label">Weight</div><div class="dd-item-val">${w ? w + ' kg' : '—'}</div></div><div class="dd-item"><div class="dd-item-label">Deep Hours</div><div class="dd-item-val">${((gS + uS) * 170 / 60).toFixed(1)}h</div></div></div></div>` }
+    function renderDayDetail() { const c = document.getElementById('day-detail-container'); if (!selDay) { c.innerHTML = ''; return } const st = DAY_CACHE[selDay]; if (!st) { c.innerHTML = `<div class="day-detail"><div class="dd-header"><span>${shortDate(selDay)} — No data</span><span class="dd-close" onclick="selectDay('${selDay}')">✕</span></div></div>`; return } const sc = calcScores(st); const w = getWeight(selDay); const bd = BODY_ITEMS.filter(it => st.body && st.body[it.id]).length; const cd = (st.cups || []).filter(Boolean).length; const meds = st.meds || []; const md = meds.filter(m => m.taken).length; const wk = st.work || { short: { sessions: 0 }, medium: { sessions: 0 }, long: { sessions: 0 } }; const totalMins = wk.short.sessions * 30 + wk.medium.sessions * 50 + wk.long.sessions * 90; c.innerHTML = `<div class="day-detail"><div class="dd-header"><span>📊 ${shortDate(selDay)} · Overall ${sc.overall}%</span><span class="dd-close" onclick="selectDay('${selDay}')">✕</span></div><div class="dd-grid"><div class="dd-item"><div class="dd-item-label">Health</div><div class="dd-item-val" style="color:var(--green)">${bd}/13 · ${sc.health}%</div></div><div class="dd-item"><div class="dd-item-label">Water</div><div class="dd-item-val" style="color:var(--blue)">${cd}/8 · ${sc.water}%</div></div><div class="dd-item"><div class="dd-item-label">Medicine</div><div class="dd-item-val" style="color:var(--purple)">${md}/${meds.length} · ${sc.medicine}%</div></div><div class="dd-item"><div class="dd-item-label">Work</div><div class="dd-item-val" style="color:var(--primary)">${wk.short.sessions}S · ${wk.medium.sessions}M · ${wk.long.sessions}L · ${sc.work}%</div></div><div class="dd-item"><div class="dd-item-label">Weight</div><div class="dd-item-val">${w ? w + ' kg' : '—'}</div></div><div class="dd-item"><div class="dd-item-label">Deep Hours</div><div class="dd-item-val">${clockFmt(totalMins)}</div></div></div></div>` }
     function renderWeekTable() {
       const wk = getWeekBounds(weekOff); const refDate = new Date(wk.monStr + 'T12:00:00');
       const yr = refDate.getFullYear(), mo = refDate.getMonth(); const mName = refDate.toLocaleDateString('en-US', { month: 'long' });
       const lastD = new Date(yr, mo + 1, 0).getDate(); const todayD = new Date(TODAY + 'T12:00:00');
       const weeks = []; for (let s = 1; s <= lastD; s += 7) { const e = Math.min(s + 6, lastD); const days = []; for (let d = s; d <= e; d++)days.push(`${yr}-${String(mo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`); weeks.push({ label: `${mName.slice(0, 3)} ${s}–${e}`, days }) }
       let html = `<thead><tr><th style="text-align:left">${mName}</th><th>Health</th><th>Water</th><th>Work</th><th>Wt Δ</th><th>Hrs</th></tr></thead><tbody>`;
-      weeks.forEach(w => { const past = w.days.filter(d => new Date(d + 'T12:00:00') <= todayD); const isCur = past.length > 0 && past.length < w.days.length; if (past.length === 0) { html += `<tr><td class="wt-label-cell">${w.label}</td><td class="wt-empty">—</td><td class="wt-empty">—</td><td class="wt-empty">—</td><td class="wt-empty">—</td><td class="wt-empty">—</td></tr>`; return } let hS = 0, wS = 0, wkS = 0, cnt = 0, tS = 0, fW = null, lW = null; past.forEach(d => { const st = DAY_CACHE[d]; if (st) { const sc = calcScores(st); hS += sc.health; wS += sc.water; wkS += sc.work; cnt++; tS += (st.growth ? st.growth.sessions : 0) + (st.upwork ? st.upwork.sessions : 0) } const wt = getWeight(d); if (wt) { if (!fW) fW = wt; lW = wt } }); const aH = cnt ? Math.round(hS / cnt) : 0, aW = cnt ? Math.round(wS / cnt) : 0, aWk = cnt ? Math.round(wkS / cnt) : 0; const wd = (fW && lW) ? (lW - fW).toFixed(1) : null; const dH = (tS * 170 / 60).toFixed(1); const pc = v => v >= 70 ? 'wt-pct-good' : v >= 40 ? 'wt-pct-ok' : 'wt-pct-bad'; html += `<tr class="${isCur ? 'wt-current' : ''}"><td class="wt-label-cell">${w.label}</td><td class="${pc(aH)}">${aH}%</td><td class="${pc(aW)}">${aW}%</td><td class="${pc(aWk)}">${aWk}%</td><td style="color:${wd && wd < 0 ? 'var(--green)' : wd > 0 ? 'var(--red)' : 'var(--muted)'}">${wd ? (wd > 0 ? '+' : '') + wd + 'kg' : '—'}</td><td>${dH}h</td></tr>` });
+      weeks.forEach(w => { const past = w.days.filter(d => new Date(d + 'T12:00:00') <= todayD); const isCur = past.length > 0 && past.length < w.days.length; if (past.length === 0) { html += `<tr><td class="wt-label-cell">${w.label}</td><td class="wt-empty">—</td><td class="wt-empty">—</td><td class="wt-empty">—</td><td class="wt-empty">—</td><td class="wt-empty">—</td></tr>`; return } let hS = 0, wS = 0, wkS = 0, cnt = 0, tS = 0, fW = null, lW = null; past.forEach(d => { const st = DAY_CACHE[d]; if (st) { const sc = calcScores(st); hS += sc.health; wS += sc.water; wkS += sc.work; cnt++; tS += st.work ? (st.work.short.sessions * 30 + st.work.medium.sessions * 50 + st.work.long.sessions * 90) : 0 } const wt = getWeight(d); if (wt) { if (!fW) fW = wt; lW = wt } }); const aH = cnt ? Math.round(hS / cnt) : 0, aW = cnt ? Math.round(wS / cnt) : 0, aWk = cnt ? Math.round(wkS / cnt) : 0; const wd = (fW && lW) ? (lW - fW).toFixed(1) : null; const dH = (tS / 60).toFixed(1); const pc = v => v >= 70 ? 'wt-pct-good' : v >= 40 ? 'wt-pct-ok' : 'wt-pct-bad'; html += `<tr class="${isCur ? 'wt-current' : ''}"><td class="wt-label-cell">${w.label}</td><td class="${pc(aH)}">${aH}%</td><td class="${pc(aW)}">${aW}%</td><td class="${pc(aWk)}">${aWk}%</td><td style="color:${wd && wd < 0 ? 'var(--green)' : wd > 0 ? 'var(--red)' : 'var(--muted)'}">${wd ? (wd > 0 ? '+' : '') + wd + 'kg' : '—'}</td><td>${dH}h</td></tr>` });
       html += '</tbody>'; document.getElementById('week-table').innerHTML = html;
       document.getElementById('month-grid-container').innerHTML = `<button class="view-month-btn" onclick="toggleMonthGrid()">📊 View Full Month</button><div id="month-grid" style="display:none"></div>`
     }
@@ -2100,27 +2234,89 @@
     function renderDayArch() {
       const el = document.getElementById('day-arch'); const p = PRAYERS || { Fajr: '04:42', Dhuhr: '12:04', Asr: '15:27', Maghrib: '18:00', Isha: '19:18' };
       const fM = toMins(p.Fajr), dhM = toMins(p.Dhuhr), asM = toMins(p.Asr), mgM = toMins(p.Maghrib), isM = toMins(p.Isha);
-      const napEnd = mgM + 90; const waterStart = mgM + 120; const suhoorStart = Math.max(0, fM - 90);
-      const pct = m => `${((Math.max(0, Math.min(1440, m)) / 1440) * 100).toFixed(2)}%`;
-      // 3 windows: Sleep, Work (all awake time), Water (info overlay on work)
+      const sleepStart = fM + 45;
+      const sleepEnd = dhM;
+      const w1Open = dhM + 15;
+      const w1Close = mgM - 120;
+      const famEnd = mgM + 180;
+      const w2Open = famEnd + 15;
+      const w2Close = fM - 180;
+      const w2CloseAdj = w2Close < w2Open ? w2Close + 1440 : w2Close;
+      const shift = mgM;
+      const rPos = m => ((m - shift) + 1440) % 1440;
+      const rPct = m => `${(rPos(m) / 1440 * 100).toFixed(2)}%`;
+      const pct = r => `${(r / 1440 * 100).toFixed(2)}%`;
+      const rFamEnd = 180;
+      const rSleepStart = rPos(sleepStart);
+      const rSleepEnd = rPos(sleepEnd);
+      const rW1Open = rPos(w1Open);
+      const rW1Close = rPos(w1Close);
+      const rW2Open = rFamEnd + 15;
+      const rW2Close = rPos(w2CloseAdj) || 1440;
+      const rIsha = rPos(isM);
+      const rFajr = rPos(fM);
+      const rAsr = rPos(asM);
       const blocks = [
-        { from: 0, to: suhoorStart, label: '⚡ WORK', cls: 't-work' },
-        { from: suhoorStart, to: fM, label: '⚡ WORK', cls: 't-work' },
-        { from: fM, to: dhM, label: '😴 SLEEP', cls: 't-sleep' },
-        { from: dhM, to: mgM, label: '⚡ WORK', cls: 't-work' },
-        { from: mgM, to: napEnd, label: '😴 NAP', cls: 't-sleep' },
-        { from: napEnd, to: 1440, label: '⚡ WORK', cls: 't-work' }
-      ].filter(b => b.to > b.from);
-      // Water overlay markers
-      const waterBlocks = [{ from: waterStart, to: Math.min(1440, waterStart + 8 * 50), label: '💧', cls: 't-water' }, { from: 0, to: suhoorStart, label: '💧', cls: 't-water' }];
-      const bHTML = blocks.map(b => `<div class="t-block ${b.cls}" style="left:${pct(b.from)};width:${pct(b.to - b.from)}">${b.label}</div>`).join('');
-      const markers = [{ mins: fM, icon: '🕌', label: 'Fajr', time: p.Fajr.split(' ')[0], color: '#F59E0B' }, { mins: dhM, icon: '🕌', label: 'Dhuhr', time: p.Dhuhr.split(' ')[0], color: '#F59E0B' }, { mins: asM, icon: '🕌', label: 'Asr', time: p.Asr.split(' ')[0], color: '#F59E0B' }, { mins: mgM, icon: '🌙', label: 'Iftar', time: p.Maghrib.split(' ')[0], color: '#10B981' }, { mins: isM, icon: '🕌', label: 'Isha', time: p.Isha.split(' ')[0], color: '#F59E0B' }];
-      const mHTML = markers.map(m => `<div class="pm-item" style="left:${pct(m.mins)}"><div class="pm-line" style="background:${m.color}"></div><div class="pm-icon">${m.icon}</div><div class="pm-label" style="color:${m.color}">${m.label}</div><div class="pm-time">${m.time}</div></div>`).join('');
-      const hrs = [0, 3, 6, 9, 12, 15, 18, 21, 24]; const hAx = hrs.map(h => `<span>${h === 0 ? '12a' : h === 12 ? '12p' : h > 12 ? `${h - 12}p` : `${h}a`}</span>`).join('');
-      const sleepH = ((dhM - fM) / 60 + 1.5).toFixed(1);
-      const workH = (24 - parseFloat(sleepH)).toFixed(1);
-      const waterH = (((1440 - waterStart) + suhoorStart) / 60).toFixed(1);
-      el.innerHTML = `<div class="arch-context">24-hour view · midnight → midnight · Dikirnis prayer times</div><div class="timeline-outer">${bHTML}</div><div class="hour-axis">${hAx}</div><div class="prayer-marker-row">${mHTML}</div><div class="arch-stats"><div class="ss-item"><div class="ss-val">${sleepH}h</div><div class="ss-lbl">😴 Sleep Window</div></div><div class="ss-item"><div class="ss-val">${workH}h</div><div class="ss-lbl">⚡ Work Window</div></div><div class="ss-item"><div class="ss-val">${waterH}h</div><div class="ss-lbl">💧 Water Window</div></div></div><div class="arch-legend"><div class="arch-legend-item"><div class="leg-dot" style="background:#2a1a5e"></div><span>😴 Sleep (inc. nap)</span></div><div class="arch-legend-item"><div class="leg-dot" style="background:#2e1515"></div><span>⚡ Work (all awake time)</span></div><div class="arch-legend-item"><div class="leg-dot" style="background:#0f2e1a"></div><span>💧 Water (within work)</span></div></div>`
+        { rFrom: 0, rWidth: rFamEnd, label: '👨‍👩‍👧 FAMILY', cls: 't-family' },
+        { rFrom: rFamEnd, rWidth: rSleepStart - rFamEnd, label: '⚡ WORK', cls: 't-work' },
+        { rFrom: rSleepStart, rWidth: rSleepEnd - rSleepStart, label: '😴 SLEEP', cls: 't-sleep' },
+        { rFrom: rSleepEnd, rWidth: 1440 - rSleepEnd, label: '⚡ WORK', cls: 't-work' }
+      ].filter(b => b.rWidth > 0);
+      const waterBlocksRaw = [
+        { rFrom: rW2Open, rWidth: rW2Close - rW2Open, label: '💧 Water', cls: 't-water' },
+        { rFrom: rW1Open, rWidth: rW1Close - rW1Open, label: '💧 Water', cls: 't-water' }
+      ].filter(b => b.rWidth > 0).sort((a, b) => a.rFrom - b.rFrom);
+      const bHTML = blocks.map(b => `<div class="t-block ${b.cls}" style="left:${pct(b.rFrom)};width:${pct(b.rWidth)}">${b.label}</div>`).join('');
+      const wHTML = waterBlocksRaw.map(b => `<div class="t-block ${b.cls}" style="left:${pct(b.rFrom)};width:${pct(b.rWidth)}">${b.label}</div>`).join('');
+      const makeAxis = ticks => `<div style="position:relative;height:20px;margin-bottom:2px">${ticks.map(t => `<span style="position:absolute;left:${pct(t.r)};transform:translateX(-50%);color:${t.color};font-size:8px;font-weight:700;white-space:nowrap">${t.label}</span>`).join('')}</div>`;
+      // Row 1 — Work boundaries
+      const workTicks = [
+        { r: rFamEnd, label: fmt12plain(fromMins(mgM + 180)), color: '#10B981' },
+        { r: rSleepStart, label: fmt12plain(fromMins(sleepStart)), color: '#10B981' },
+        { r: rSleepEnd, label: fmt12plain(fromMins(sleepEnd)), color: '#10B981' }
+      ];
+      // Row 2 — Water boundaries
+      const waterTicks = [
+        { r: rW2Open, label: fmt12plain(fromMins(w2Open)), color: '#3b82f6' },
+        { r: rW2Close, label: fmt12plain(fromMins(w2CloseAdj % 1440)), color: '#3b82f6' },
+        { r: rW1Open, label: fmt12plain(fromMins(w1Open)), color: '#3b82f6' },
+        { r: rW1Close, label: fmt12plain(fromMins(w1Close)), color: '#3b82f6' }
+      ];
+      // Row 3 — Sleep + Family boundaries
+      const sleepFamTicks = [
+        { r: 0, label: fmt12plain(p.Maghrib), color: '#ef4444' },
+        { r: rFamEnd, label: fmt12plain(fromMins(mgM + 180)), color: '#ef4444' },
+        { r: rSleepStart, label: fmt12plain(fromMins(sleepStart)), color: '#888888' },
+        { r: rSleepEnd, label: fmt12plain(fromMins(sleepEnd)), color: '#888888' }
+      ];
+      // Row 4 — Adhan times
+      const adanTicks = [
+        { r: 0, label: fmt12plain(p.Maghrib), color: '#10B981' },
+        { r: rIsha, label: fmt12plain(p.Isha), color: '#F59E0B' },
+        { r: rFajr, label: fmt12plain(p.Fajr), color: '#F59E0B' },
+        { r: rSleepEnd, label: fmt12plain(p.Dhuhr), color: '#F59E0B' },
+        { r: rAsr, label: fmt12plain(p.Asr), color: '#F59E0B' }
+      ];
+      const markers = [
+        { mins: mgM, icon: '🌙', label: 'Maghrib', color: '#10B981' },
+        { mins: isM, icon: '🕌', label: 'Isha', color: '#F59E0B' },
+        { mins: fM, icon: '🕌', label: 'Fajr', color: '#F59E0B' },
+        { mins: dhM, icon: '🕌', label: 'Dhuhr', color: '#F59E0B' },
+        { mins: asM, icon: '🕌', label: 'Asr', color: '#F59E0B' }
+      ];
+      const mHTML = markers.map(m => `<div class="pm-item" style="left:${rPct(m.mins)}"><div class="pm-line" style="background:${m.color}"></div><div class="pm-icon">${m.icon}</div><div class="pm-label" style="color:${m.color}">${m.label}</div></div>`).join('');
+      const sleepMins = sleepEnd - sleepStart;
+      const napMins = 90;
+      const famMins = 180;
+      const workMins = 1440 - sleepMins - napMins - famMins;
+      const w1Mins = w1Close - w1Open;
+      const w2Mins = w2CloseAdj - w2Open;
+      const waterMins = w1Mins + w2Mins;
+      const sleepH = clockFmt(sleepMins + napMins);
+      const workH = clockFmt(workMins);
+      const famH = clockFmt(famMins);
+      const waterH = clockFmt(waterMins);
+      el.innerHTML = `<div class="arch-context">Islamic day view · Maghrib → Maghrib · Dikirnis prayer times</div>${makeAxis(waterTicks)}<div class="timeline-row"><div class="timeline-outer-wrap"><div class="timeline-outer slim">${wHTML}</div></div></div>${makeAxis(sleepFamTicks)}<div class="timeline-row"><div class="timeline-outer-wrap"><div class="timeline-outer">${bHTML}</div></div></div>${makeAxis(workTicks)}${makeAxis(adanTicks)}<div class="prayer-marker-row">${mHTML}</div><div class="arch-stats" style="grid-template-columns:repeat(4,1fr)"><div class="ss-item"><div class="ss-val">${sleepH}</div><div class="ss-lbl">😴 Sleep + Nap</div></div><div class="ss-item"><div class="ss-val">${workH}</div><div class="ss-lbl">⚡ Work</div></div><div class="ss-item"><div class="ss-val">${famH}</div><div class="ss-lbl">👨‍👩‍👧 Family</div></div><div class="ss-item"><div class="ss-val">${waterH}</div><div class="ss-lbl">💧 Water</div></div></div>`
     }
     /* ═══ QUOTES (loaded from Firestore) ═══ */
     let QUOTES_FS = [];
@@ -2138,10 +2334,7 @@
 
     function renderQuote() {
       if (!QUOTES_FS.length) return;
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      const start = new Date(CFG.ramadanStart); start.setHours(0, 0, 0, 0);
-      const rd = Math.min(Math.max(Math.floor((today - start) / 864e5) + 1, 1), 30);
-      if (!quoteAnchored) { quoteIdx = rd - 1; quoteAnchored = true; }
+      if (!quoteAnchored) { quoteIdx = (new Date().getDate() - 1) % QUOTES_FS.length; quoteAnchored = true; }
       const q = QUOTES_FS[quoteIdx % QUOTES_FS.length];
       document.getElementById('qtext').innerHTML = q.html;
       document.getElementById('qnum').textContent = `${q.num} / ${QUOTES_FS.length}`;
@@ -2169,9 +2362,9 @@
       renderBody();
       renderCups();
       renderWork();
+      await loadQuotes();
       renderQuote();
       await renderWeekSection();
-      await loadQuotes();
       await loadPrayers();
       renderPrayers(); renderCups(); renderPills(); renderProgress(); renderDayArch();
       loadTomorrowFajr();
