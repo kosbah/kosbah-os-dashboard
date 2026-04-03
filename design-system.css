@@ -1,0 +1,27 @@
+/* ═══════════════════════════════════════════
+   Kosbah OS · Design System
+   Identity tokens — portable across projects
+   Last updated: 2026-04-03
+═══════════════════════════════════════════ */
+
+:root {
+  --bg: #0F172A;
+  --surface: #111827;
+  --surface2: #1a2235;
+  --border: #1F2937;
+  --primary: #F59E0B;
+  --green: #10B981;
+  --blue: #3B82F6;
+  --purple: #8B5CF6;
+  --red: #EF4444;
+  --text: #F9FAFB;
+  --muted: #9CA3AF;
+  --pdim: rgba(245, 158, 11, .14);
+  --pborder: rgba(245, 158, 11, .30);
+  --gdim: rgba(16, 185, 129, .12);
+  --gborder: rgba(16, 185, 129, .30);
+  --bdim: rgba(59, 130, 246, .12);
+  --bborder: rgba(59, 130, 246, .30);
+  --vdim: rgba(139, 92, 246, .12);
+  --vborder: rgba(139, 92, 246, .30);
+}
