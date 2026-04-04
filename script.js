@@ -144,6 +144,8 @@ let TODAY, SK;
 let PRAYERS = null, TOMORROW_FAJR = null, HIJRI_DATA = null;
 let DAY_CACHE = {};
 let unsubscribeToday = null;
+let ACTIVE_SESSION = null; // { type, endTimestamp }
+let sessionCountdownInterval = null;
 
 function refreshToday() { TODAY = getEffectiveDate(); SK = `os-${TODAY}`; }
 
@@ -174,6 +176,11 @@ function fsToState(doc) {
     if (d.work.short) s.work.short = { sessions: d.work.short.sessions || 0, log: d.work.short.log || [] };
     if (d.work.medium) s.work.medium = { sessions: d.work.medium.sessions || 0, log: d.work.medium.log || [] };
     if (d.work.long) s.work.long = { sessions: d.work.long.sessions || 0, log: d.work.long.log || [] };
+    if (d.work.activeSession && d.work.activeSession.endTimestamp > Date.now()) {
+      ACTIVE_SESSION = d.work.activeSession;
+    } else {
+      ACTIVE_SESSION = null;
+    }
   }
   if (d.spiritual) s.spiritual = d.spiritual;
   if (d.expenses) s.expenses = d.expenses;
@@ -211,6 +218,55 @@ async function saveState() {
   }
 }
 
+/* ═══ SESSION LOCK ═══ */
+async function setSessionLock(type, mins) {
+  const endTimestamp = Date.now() + mins * 60 * 1000;
+  ACTIVE_SESSION = { type, endTimestamp };
+  await dayRef(TODAY).set({ work: { activeSession: { type, endTimestamp } } }, { merge: true });
+}
+
+async function clearSessionLock() {
+  ACTIVE_SESSION = null;
+  clearInterval(sessionCountdownInterval);
+  await dayRef(TODAY).set({ work: { activeSession: null } }, { merge: true });
+  renderWorkButtons();
+}
+
+function renderWorkButtons() {
+  const icons = { short: '⚡', medium: '🔥', long: '🚀' };
+  const btns = {
+    short: document.getElementById('short-btn'),
+    medium: document.getElementById('medium-btn'),
+    long: document.getElementById('long-btn')
+  };
+
+
+
+  if (ACTIVE_SESSION && ACTIVE_SESSION.endTimestamp > Date.now()) {
+    // Lock all buttons
+    Object.values(btns).forEach(b => {
+      if (b) { b.style.opacity = '0.4'; b.style.cursor = 'not-allowed'; }
+    });
+    // Inject countdown badge into the active session's log div
+    clearInterval(sessionCountdownInterval);
+    sessionCountdownInterval = setInterval(() => {
+      const rem = ACTIVE_SESSION.endTimestamp - Date.now();
+      if (rem <= 0) { clearSessionLock(); return; }
+      const m = Math.floor(rem / 60000);
+      const s = Math.floor((rem % 60000) / 1000);
+      const badge = document.getElementById(`ws-cd-${ACTIVE_SESSION.type}`);
+      if (badge) badge.textContent = `⏱ ${m}:${String(s).padStart(2, '0')}`;
+    }, 1000);
+  } else {
+    // Unlock all buttons
+    Object.values(btns).forEach(b => {
+      if (b) { b.disabled = false; b.style.opacity = ''; b.style.cursor = ''; }
+    });
+    clearInterval(sessionCountdownInterval);
+    ACTIVE_SESSION = null;
+  }
+}
+
 async function loadTodayFromFs() {
   try {
     const doc = await dayRef(TODAY).get();
@@ -229,7 +285,7 @@ function subscribeToday() {
     if (s) {
       ST = s;
       DAY_CACHE[TODAY] = ST;
-      renderScoreStrip(); renderBody(); renderCups(); renderPills(); renderWork(); renderWeight(); renderWeekSection();
+      renderScoreStrip(); renderBody(); renderCups(); renderPills(); renderWork(); renderWeight(); renderWeekSection(); renderWorkButtons();
     }
   }, e => console.warn('snapshot error', e));
 }
@@ -651,11 +707,18 @@ function renderWork() {
   WORK_TYPES.forEach(({ key, mins, cls, icon, glow, ring }) => {
     const w = ST.work[key]; const c = w.sessions; const log = w.log || [];
     const dE = document.getElementById(`${key}-dots`);
-    if (dE) dE.innerHTML = Array.from({ length: c }, (_, i) => `<div class="sesh-dot" title="Session ${i + 1} · click to remove" onclick="removeSession('${key}',${i})" style="width:46px;height:46px;background:${glow.replace('.35', '.15')};border:2px solid ${ring};box-shadow:0 0 10px ${glow};font-size:20px;">${icon}</div>`).join('') + `<div class="sesh-dot add" onclick="startSession('${key}')">+</div>`;
+    const sessionActive = ACTIVE_SESSION && ACTIVE_SESSION.endTimestamp > Date.now();
+    const addDot = `<div class="sesh-dot add" onclick="startSession('${key}')">+</div>`;
+    if (dE) dE.innerHTML = Array.from({ length: c }, (_, i) => {
+      return `<div class="sesh-dot" style="width:46px;height:46px;background:${glow.replace('.35', '.15')};border:2px solid ${ring};box-shadow:0 0 10px ${glow};font-size:20px;cursor:default;">${icon}</div>`;
+    }).join('') + addDot;
     const lE = document.getElementById(`${key}-log`);
+    const isActive = ACTIVE_SESSION && ACTIVE_SESSION.type === key && ACTIVE_SESSION.endTimestamp > Date.now();
     if (lE) lE.innerHTML = log.map((e, i) => {
       const gNum = globalNumMap[`${key}-${i}`] || '?';
-      return `<div class="wt-log-item" style="--accent-color:${ring}"><span><span class="log-num">#${gNum}</span>${icon} ${key.charAt(0).toUpperCase() + key.slice(1)}</span><span class="log-time">${e.time}</span></div>`;
+      const isLatest = i === log.length - 1;
+      const badge = (isActive && isLatest) ? `<span class="pr-cdown ws-countdown-badge" id="ws-cd-${key}" style="background:${glow};border-color:${ring};color:#fff;">⏱ --:--</span>` : '';
+      return `<div class="wt-log-item" style="--accent-color:${ring}"><span><span class="log-num">#${gNum}</span>${icon} ${key.charAt(0).toUpperCase() + key.slice(1)}</span><span style="display:flex;align-items:center;gap:8px">${badge}<span class="log-time">${e.time}</span></span></div>`;
     }).reverse().join('');
   });
 
@@ -683,13 +746,24 @@ async function removeSession(type, idx) {
 }
 
 async function startSession(type) {
+  // Guard — block if session already active
+  if (ACTIVE_SESSION && ACTIVE_SESSION.endTimestamp > Date.now()) {
+    const icons = { short: '⚡', medium: '🔥', long: '🚀' };
+    const remM = Math.floor((ACTIVE_SESSION.endTimestamp - Date.now()) / 60000);
+    const remS = Math.floor(((ACTIVE_SESSION.endTimestamp - Date.now()) % 60000) / 1000);
+    showToast(`⚠️ ${icons[ACTIVE_SESSION.type]} ${ACTIVE_SESSION.type} session running · ${remM}:${String(remS).padStart(2, '0')} left`);
+    return;
+  }
+  const SESSION_MINS = { short: 30, medium: 50, long: 90 };
   const t = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   ST.work[type].sessions++;
   ST.work[type].log.push({ time: t });
   renderWork();
   await saveState();
+  await setSessionLock(type, SESSION_MINS[type]);
+  renderWorkButtons();
   const wh = CFG.n8nWorkWebhook || CFG.slackWebhook;
-  if (wh) fetch(wh, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionType: type, startTime: t }) }).catch(() => { });
+  if (wh) fetch(wh, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionType: type, startTime: t, counts: { short: ST.work.short.sessions, medium: ST.work.medium.sessions, long: ST.work.long.sessions } }) }).catch(() => { });
   const sessionStartIcons = { short: '⚡', medium: '🔥', long: '🚀' };
   showToast(`${sessionStartIcons[type] || '▶'} ${type.charAt(0).toUpperCase() + type.slice(1)} session started · ${t}`);
 }
