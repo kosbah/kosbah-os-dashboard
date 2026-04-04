@@ -28,7 +28,7 @@ function signInWithGoogle() {
   auth.signInWithPopup(p).catch(e => {
     console.error('Auth error:', e);
     hideLoader();
-    showToast('⚠ Sign-in failed');
+    showToast('⚠️ Sign-in failed — check connection');
   });
 }
 
@@ -42,7 +42,7 @@ const CFG = {
   weightGoal: 93,
   weightMilestoneStep: 2,
   slackWebhook: '',
-  n8nWorkWebhook: ''
+  n8nWorkWebhook: 'https://searchlessai.cloud/webhook/work-session'
 };
 const TZ = 'Africa/Cairo';
 
@@ -306,7 +306,7 @@ async function renderLastWeekStrip() {
   const el = document.getElementById('last-week-strip');
   if (!el) return;
   let weightFirst = null, weightLast = null;
-  let sunTotal = 0, waterTotal = 0, workMins = 0, cnt = 0;
+  let healthTotal = 0, waterTotal = 0, workMins = 0, cnt = 0;
   for (let i = 7; i >= 1; i--) {
     const d = dateStr(-i);
     const s = DAY_CACHE[d];
@@ -315,7 +315,7 @@ async function renderLastWeekStrip() {
     const w = s.weight && s.weight.value != null ? s.weight.value : null;
     if (w && !weightFirst) weightFirst = w;
     if (w) weightLast = w;
-    sunTotal += (s.body && s.body.sun) ? 1 : 0;
+    healthTotal += calcScores(s).health;
     waterTotal += calcScores(s).water;
     workMins += s.work ? (s.work.short.sessions * 30 + s.work.medium.sessions * 50 + s.work.long.sessions * 90) : 0;
   }
@@ -323,11 +323,35 @@ async function renderLastWeekStrip() {
   const weightDelta = (weightFirst != null && weightLast != null) ? (weightLast - weightFirst).toFixed(1) : null;
   const wdColor = weightDelta == null ? 'var(--muted)' : weightDelta < 0 ? 'var(--green)' : weightDelta > 0 ? 'var(--red)' : 'var(--muted)';
   const wdText = weightDelta == null ? '— kg' : `${weightDelta > 0 ? '+' : ''}${weightDelta} kg`;
-  const sunPct = Math.round((sunTotal / cnt) * 100);
   const hydPct = Math.round(waterTotal / cnt);
-  const workH = (workMins / 60).toFixed(1);
+  const healthPct = Math.round(healthTotal / cnt);
+  const workH = Math.floor(workMins / 60);
+  const workM = workMins % 60;
+  const workText = workH > 0 && workM > 0 ? `${workH}h ${workM}m` : workH > 0 ? `${workH}h` : `${workM}m`;
   const pctColor = v => v >= 70 ? 'var(--green)' : v >= 40 ? 'var(--primary)' : 'var(--red)';
-  el.innerHTML = `<div class="lw-strip"><span class="lw-metric" style="color:${wdColor}">⚖️ ${wdText}</span><span class="lw-sep">·</span><span class="lw-metric" style="color:${pctColor(hydPct)}">💧 ${hydPct}%</span><span class="lw-sep">·</span><span class="lw-metric" style="color:${pctColor(sunPct)}">☀️ ${sunPct}%</span><span class="lw-sep">·</span><span class="lw-metric" style="color:var(--primary)">⚡ ${workH}h</span></div>`;
+  el.innerHTML = `
+    <div class="lw-strip">
+      <div style="text-align:center">
+        <div style="font-size:18px">⚖️</div>
+        <div class="lw-metric" style="color:${wdColor}">${wdText}</div>
+        <div class="lw-label">Weight</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:18px">💧</div>
+        <div class="lw-metric" style="color:${pctColor(hydPct)}">${hydPct}%</div>
+        <div class="lw-label">Hydration</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:18px">🏃</div>
+        <div class="lw-metric" style="color:${pctColor(healthPct)}">${healthPct}%</div>
+        <div class="lw-label">Health</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:18px">⚡</div>
+        <div class="lw-metric" style="color:var(--primary)">${workText}</div>
+        <div class="lw-label">Deep Work</div>
+      </div>
+    </div>`;
 }
 
 /* ═══ WEIGHT ═══ */
@@ -339,7 +363,7 @@ function getWeight(dk) {
 
 async function saveWeight() {
   const v = parseFloat(document.getElementById('wc-input').value);
-  if (isNaN(v) || v < 40 || v > 250) { showToast('Enter a valid weight'); return; }
+  if (isNaN(v) || v < 40 || v > 250) { showToast('⚠️ Enter a weight between 40–250 kg'); return; }
   ST.weight = { value: v, unit: 'kg', note: '' };
   document.getElementById('wc-input').value = '';
   await saveState();
@@ -389,7 +413,7 @@ async function loadPrayers() {
   } catch {
     PRAYERS = { Fajr: '04:42', Dhuhr: '12:04', Asr: '15:27', Maghrib: '18:00', Isha: '19:18' };
     document.getElementById('h-hijri').textContent = 'Offline';
-    showToast('⚠ Using offline prayer times');
+    showToast('⚠️ Using cached prayer times');
   }
 }
 
@@ -524,7 +548,9 @@ async function toggleBody(id) {
   ST.body[id] = !ST.body[id];
   renderBody();
   await saveState();
-  showToast(ST.body[id] ? '✓ Done' : 'Unmarked');
+  const bodyItem = BODY_ITEMS.find(it => it.id === id);
+  const bodyLabel = bodyItem ? `${bodyItem.icon} ${bodyItem.label}` : id;
+  showToast(ST.body[id] ? `✓ ${bodyLabel} done` : `↩ ${bodyLabel} unmarked`);
 }
 
 /* ═══ CUPS ═══ */
@@ -547,7 +573,9 @@ async function toggleCup(i) {
   ST.cups[i] = !ST.cups[i];
   renderCups();
   await saveState();
-  showToast(ST.cups[i] ? `💧 ${(ST.cups.filter(Boolean).length * .5).toFixed(1)}L done` : 'Cup unchecked');
+  const cupNum = i + 1;
+  const totalL = (ST.cups.filter(Boolean).length * 0.5).toFixed(1);
+  showToast(ST.cups[i] ? `💧 Cup ${cupNum} · ${totalL}L done` : `↩ Cup ${cupNum} unchecked`);
 }
 
 /* ═══ MEDICINE ═══ */
@@ -564,15 +592,18 @@ async function toggleMed(i) {
   ST.meds[i].taken = !ST.meds[i].taken;
   renderPills();
   await saveState();
-  showToast(ST.meds[i].taken ? '💊 Taken' : 'Unmarked');
+  const med = ST.meds[i];
+  const medIcon = med.type === 'injection' ? '💉' : med.type === 'packet' ? '📦' : med.type === 'scoop' ? '🥄' : '💊';
+  showToast(med.taken ? `${medIcon} ${med.name} taken` : `↩ ${med.name} unmarked`);
 }
 
 async function removeMed(i) {
   if (!confirm(`Remove "${ST.meds[i].name}"?`)) return;
+  const removedName = ST.meds[i].name;
   ST.meds.splice(i, 1);
   renderPills();
   await saveState();
-  showToast('Medicine removed');
+  showToast(`🗑 ${removedName} removed`);
 }
 
 function openAddMed() {
@@ -583,7 +614,7 @@ function closeAddMed() { document.getElementById('med-modal-root').innerHTML = '
 
 async function saveMed() {
   const name = document.getElementById('mm-name').value.trim();
-  if (!name) { showToast('Enter a name'); return; }
+  if (!name) { showToast('⚠️ Enter a medicine name'); return; }
   const med = { id: 'med-' + Date.now(), name, type: document.getElementById('mm-type').value, dose: document.getElementById('mm-dose').value.trim(), anchor: document.getElementById('mm-anchor').value, taken: false };
   ST.meds.push(med);
   renderPills();
@@ -647,7 +678,8 @@ async function removeSession(type, idx) {
   ST.work[type].log.splice(idx, 1);
   renderWork();
   await saveState();
-  showToast('Session removed');
+  const sessionIcons = { short: '⚡', medium: '🔥', long: '🚀' };
+  showToast(`🗑 ${sessionIcons[type] || ''} ${type.charAt(0).toUpperCase() + type.slice(1)} session removed`);
 }
 
 async function startSession(type) {
@@ -658,7 +690,8 @@ async function startSession(type) {
   await saveState();
   const wh = CFG.n8nWorkWebhook || CFG.slackWebhook;
   if (wh) fetch(wh, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionType: type, startTime: t }) }).catch(() => { });
-  showToast(`▶ ${type.charAt(0).toUpperCase() + type.slice(1)} session started`);
+  const sessionStartIcons = { short: '⚡', medium: '🔥', long: '🚀' };
+  showToast(`${sessionStartIcons[type] || '▶'} ${type.charAt(0).toUpperCase() + type.slice(1)} session started · ${t}`);
 }
 
 /* ═══ EVENT LISTENERS ═══ */
