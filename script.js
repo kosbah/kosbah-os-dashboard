@@ -847,7 +847,13 @@ function derived() {
 function cupTimes() {
   const d = derived();
   if (!d) return [];
-  return Array.from({ length: CFG.waterCups }, (_, i) => addMins(d.waterOpen, i * CFG.waterInterval));
+  const dhuhr = PRAYERS.Dhuhr;
+  const w1Open = addMins(dhuhr, 15);
+  const w2Open = addMins(PRAYERS.Maghrib, 195);
+  const times = [];
+  for (let i = 0; i < 4; i++) times.push(addMins(w1Open, i * 50));
+  for (let i = 0; i < 4; i++) times.push(addMins(w2Open, i * 50));
+  return times;
 }
 
 function getMedTime(anchor) {
@@ -981,7 +987,7 @@ function renderCups() {
   const nI = ST.cups.findIndex(c => !c);
   const h = document.getElementById('cup-hint');
   if (nI === -1) { h.textContent = 'All 8 cups done · 4.0L ✓'; h.style.color = '#6ee7b7'; }
-  else if (cupTimes()[nI]) { h.innerHTML = `${dr} of 8 · ${(dr * .5).toFixed(1)}L &nbsp;·&nbsp; Next: Cup ${nI + 1} at <strong>${fmt12plain(cupTimes()[nI])}</strong>`; h.style.color = ''; }
+  else if (cupTimes()[nI]) { h.innerHTML = `${dr} of 8 · ${(dr * .5).toFixed(1)}L &nbsp;·&nbsp; Next: Cup ${dr + 1} at <strong>${fmt12plain(cupTimes()[dr])}</strong>`; h.style.color = ''; }
   else { h.textContent = `${dr} of 8 cups tracked`; h.style.color = ''; }
 }
 
