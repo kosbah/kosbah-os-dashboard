@@ -272,8 +272,8 @@ main {
 
 .wc-log-panel {
   background: var(--surface2);
-  border: 1px solid var(--pborder);
-  box-shadow: 0 0 20px rgba(245, 158, 11, .05) inset
+  border: 1px solid var(--border);
+  box-shadow: none
 }
 
 .wc-goal-panel {
@@ -384,7 +384,7 @@ main {
 .wc-goal-val {
   font-size: 26px;
   font-weight: 900;
-  color: var(--green);
+  color: var(--text);
   line-height: 1.1
 }
 

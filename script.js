@@ -365,6 +365,8 @@ const LS_WEIGHT_DATA = 'kosbah_weight_data';
 const LS_WEEK_OPEN = 'kosbah_week_open';
 const LS_WEEK_DATE = 'kosbah_week_date';
 const LS_WEEK_DATA = 'kosbah_week_data';
+const LS_LWS_DATE = 'kosbah_lws_date';
+const LS_LWS_DATA = 'kosbah_lws_data';
 
 function lsGet(key) { try { return localStorage.getItem(key); } catch { return null; } }
 function lsSet(key, val) { try { localStorage.setItem(key, val); } catch { } }
@@ -514,13 +516,20 @@ async function saveWeight() {
 
 function renderWeight() {
   // ── Block 1: today + delta ──
-  const tw = getWeight(TODAY), yw = getWeight(dateStr(-1));
+  // Use effective date offset: if TODAY is already dateStr(-1) (before Fajr), yesterday is dateStr(-2)
+  const effectiveYesterday = TODAY === dateStr(-1) ? dateStr(-2) : dateStr(-1);
+  const tw = getWeight(TODAY), yw = getWeight(effectiveYesterday);
   document.getElementById('wc-today').innerHTML = tw ? `${tw}<small> kg</small>` : '—<small> kg</small>';
   const dEl = document.getElementById('wc-delta');
   if (tw && yw) {
     const diff = tw - yw;
-    dEl.className = `wc-delta ${diff < 0 ? 'loss' : diff > 0 ? 'gain' : 'flat'}`;
-    dEl.textContent = `${diff > 0 ? '+' : ''}${diff.toFixed(1)} kg vs yesterday`;
+    if (diff === 0) {
+      dEl.className = 'wc-delta flat';
+      dEl.textContent = '= Same as yesterday';
+    } else {
+      dEl.className = `wc-delta ${diff < 0 ? 'loss' : 'gain'}`;
+      dEl.textContent = `${diff > 0 ? '+' : ''}${diff.toFixed(1)} kg vs yesterday`;
+    }
   } else { dEl.className = 'wc-delta'; dEl.textContent = ''; }
 
   // ── Projection: use 2 weeks before current calendar week ──
@@ -593,14 +602,15 @@ function renderWeight() {
       weeksHtml = `<div class="wc-goal-row"><div class="wc-goal-label">Weeks to Goal</div><div class="wc-goal-val">${weeksLeft} <span style="font-size:14px;color:var(--muted)">weeks</span></div></div>`;
       dateHtml = `<div class="wc-goal-row"><div class="wc-goal-label">Estimated Finish</div><div class="wc-goal-val" style="font-size:16px">${finishStr}</div></div>`;
       goalEl.innerHTML = `
-        <div class="wc-goal-row"><div class="wc-goal-label">Target</div><div class="wc-goal-val amber">${goal} <span style="font-size:14px;color:var(--muted)">kg</span></div></div>
-        <div class="wc-goal-row"><div class="wc-goal-label">Weight Left</div><div class="wc-goal-val">${kgLeftProjected} <span style="font-size:14px;color:var(--muted)">kg to go</span></div><div class="wc-goal-sub">Based on last 2-week avg · ${Math.abs(avgDailyLoss).toFixed(2)} kg/day</div></div>
-        ${weeksHtml}${dateHtml}`;
+        <div class="wc-goal-row"><div class="wc-goal-label">Target</div><div class="wc-goal-val" style="color:var(--primary)">🎯 ${goal} <span style="font-size:14px;color:var(--muted)">kg</span></div></div>
+        <div class="wc-goal-row"><div class="wc-goal-label">Weight Left</div><div class="wc-goal-val" style="color:var(--text);font-size:22px">${kgLeftProjected} <span style="font-size:14px;color:var(--muted)">kg to go</span></div><div class="wc-goal-sub">Based on last 2-week avg · ${Math.abs(avgDailyLoss).toFixed(2)} kg/day</div></div>
+        <div class="wc-goal-row"><div class="wc-goal-label">Weeks to Goal</div><div class="wc-goal-val" style="color:var(--primary)">${weeksLeft} <span style="font-size:14px;color:var(--muted)">weeks</span></div></div>
+        <div class="wc-goal-row"><div class="wc-goal-label">Estimated Finish</div><div class="wc-goal-val" style="color:var(--text);font-size:16px">🗓️ ${finishStr}</div></div>`;
     } else {
       const kgLeft = cw > 0 ? (cw - goal).toFixed(1) : '—';
       goalEl.innerHTML = `
-        <div class="wc-goal-row"><div class="wc-goal-label">Target</div><div class="wc-goal-val amber">${goal} <span style="font-size:14px;color:var(--muted)">kg</span></div></div>
-        <div class="wc-goal-row"><div class="wc-goal-label">Weight Left</div><div class="wc-goal-val">${kgLeft} <span style="font-size:14px;color:var(--muted)">kg to go</span></div><div class="wc-goal-sub">Log more data for projection</div></div>`;
+        <div class="wc-goal-row"><div class="wc-goal-label">Target</div><div class="wc-goal-val" style="color:var(--primary)">🎯 ${goal} <span style="font-size:14px;color:var(--muted)">kg</span></div></div>
+        <div class="wc-goal-row"><div class="wc-goal-label">Weight Left</div><div class="wc-goal-val" style="color:var(--text);font-size:22px">${kgLeft} <span style="font-size:14px;color:var(--muted)">kg to go</span></div><div class="wc-goal-sub">Log more data for projection</div></div>`;
     }
   } else if (cw && cw <= goal) {
     goalEl.innerHTML = `<div class="wc-goal-row"><div class="wc-goal-label">Goal</div><div class="wc-goal-val green">🎉 ${goal} kg reached!</div></div>`;
@@ -724,6 +734,30 @@ function expandWeightSection() {
     <div class="wc-grid-block" id="wc-grid-block"></div>`;
   // wc-input listener attached dynamically in expandWeightSection()
   renderWeight();
+}
+
+/* ═══ LAST WEEK STRIP LAZY ═══ */
+async function initLastWeekStrip() {
+  const today = getEffectiveDate();
+  const savedDate = lsGet(LS_LWS_DATE);
+  if (savedDate === today) {
+    const cached = lsGetJSON(LS_LWS_DATA);
+    if (cached) {
+      Object.entries(cached).forEach(([dk, val]) => {
+        if (DAY_CACHE[dk] === undefined) DAY_CACHE[dk] = val;
+      });
+      renderLastWeekStrip();
+      return;
+    }
+  }
+  const days = [];
+  for (let i = 1; i <= 7; i++) days.push(dateStr(-i));
+  await prefetchWeek(days);
+  lsSet(LS_LWS_DATE, today);
+  const snapshot = {};
+  days.forEach(d => { snapshot[d] = DAY_CACHE[d]; });
+  lsSetJSON(LS_LWS_DATA, snapshot);
+  renderLastWeekStrip();
 }
 
 /* ═══ WEEK LAZY ═══ */
@@ -1382,6 +1416,7 @@ async function init() {
   initWeekLazy();
   subscribeToday();
   hideLoader();
+  initLastWeekStrip();
 }
 
 /* ═══ AUTH ═══ */
