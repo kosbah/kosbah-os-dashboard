@@ -1340,16 +1340,16 @@ function renderDayArch() {
 let quoteIdx = 0, quoteAnchored = false;
 
 const QUOTES_FS = [
-  { num: 1, html: "If you want to introduce value:<br><br>• Prove it.&nbsp; • Document it.&nbsp; • Show it.", tags: ["Value", "Execution"] },
+  { num: 1, html: "If you want to <strong>introduce value</strong>:<br>• Prove it.&nbsp; • Document it.&nbsp; • Show it.", tags: ["Value", "Execution"] },
   { num: 2, html: "If you are everything to everyone, you are <strong>nothing to anyone</strong>.<br>Stand for something. Pick your ground.", tags: ["Identity", "Focus"] },
   { num: 3, html: "<strong>Copywriting</strong> is using words to persuade someone to take action or think a certain way.", tags: ["Skill", "Copywriting"] },
   { num: 4, html: "Focus on <strong>monthly income</strong>, not your bank balance.<br>Reinvest the extra money so your income keeps growing.", tags: ["Money", "Mindset"] },
-  { num: 5, html: "The basics matter most:<br>Show up. Stay consistent. Learn real skills before chasing big moves.", tags: ["Discipline", "Consistency"] },
+  { num: 5, html: "The basics matter most:<br><strong>Show up.</strong> Stay consistent. Learn real skills before chasing big moves.", tags: ["Discipline", "Consistency"] },
   { num: 6, html: "Failure isn't starting over.<br>It's just another <strong>experience point</strong>.", tags: ["Resilience", "Growth"] },
-  { num: 7, html: "The solution in two lines:<br><br>• Admit your mistake.<br>• Use what you have and keep going.", tags: ["Accountability", "Action"] },
+  { num: 7, html: "The solution in two lines:<br>• Admit your mistake.<br>• <strong>Use what you have</strong> and keep going.", tags: ["Accountability", "Action"] },
   { num: 8, html: "The normal phase:<br>Work <strong>6 days a week, 12 hours a day</strong>.<br>You have energy now — not experience.", tags: ["Work Ethic", "Phase"] },
   { num: 9, html: "When you're broke, live <strong>defensively</strong>.<br>Cut your spending to the minimum so you can bet on yourself.", tags: ["Finance", "Survival Mode"] },
-  { num: 10, html: "If you're broke:<br>• No restaurants&nbsp; • No new clothes&nbsp; • Only free social events", tags: ["Finance", "Discipline"] },
+  { num: 10, html: "If you're broke:<br>• No restaurants&nbsp; • No new clothes&nbsp; • <strong>Only free</strong> social events", tags: ["Finance", "Discipline"] },
   { num: 11, html: "Be patient with results.<br>Be impatient with action.<br><strong>Movement cures anxiety.</strong>", tags: ["Mindset", "Action"] },
   { num: 12, html: "Build a <strong>cash reserve</strong> so you can move from survival mode to growth mode.", tags: ["Finance", "Strategy"] },
   { num: 13, html: "The golden rule:<br>Start. Learn. Don't quit.<br>The game is won by the <strong>last person still standing</strong>.", tags: ["Persistence", "Mindset"] },
@@ -1370,7 +1370,7 @@ const QUOTES_FS = [
   { num: 28, html: "Don't follow your passion.<br>Follow the thing you're <strong>good at and people are willing to pay for</strong>.", tags: ["Career", "Clarity"] },
   { num: 29, html: "Don't focus on networking early.<br>Focus on getting good at your work.<br>When you succeed, <strong>people will come to you</strong>.", tags: ["Growth", "Skill-First"] },
   { num: 30, html: "The person who <strong>shows up every day</strong> is very hard to beat.", tags: ["Consistency", "Discipline"] },
-  { num: 31, html: "Every goal has a price — <strong>paid or abandoned</strong>, but never complained about. The wealthy buy time. The ambitious invest their time in skills. The lazy waste their time on distraction.", tags: ["mindset", "time", "ambition"] }
+  { num: 31, html: "Every goal has a price — <strong>paid or abandoned</strong>, but never complained about.<br>The wealthy buy time. <strong>The ambitious invest their time in skills</strong>. The lazy waste their time on distraction.", tags: ["mindset", "time", "ambition"] }
 ];
 
 function renderQuote() {
