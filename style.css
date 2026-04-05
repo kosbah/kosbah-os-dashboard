@@ -249,40 +249,62 @@ main {
   white-space: nowrap
 }
 
-.weight-card {
+/* ── Weight Tracker ── */
+/* ── Weight Tracker ── */
+.wc-top-row {
   display: flex;
-  gap: 16px;
+  gap: 14px;
   align-items: stretch;
-  flex-wrap: wrap
+  margin-bottom: 20px
 }
 
-.wc-left {
+.wc-panel {
   flex: 1;
-  min-width: 180px
+  min-width: 0;
+  border-radius: 16px;
+  padding: 24px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center
 }
 
-.wc-right {
-  flex: 1;
-  min-width: 180px
+.wc-log-panel {
+  background: var(--surface2);
+  border: 1px solid var(--pborder);
+  box-shadow: 0 0 20px rgba(245, 158, 11, .05) inset
+}
+
+.wc-goal-panel {
+  background: rgba(16, 185, 129, .06);
+  border: 1px solid rgba(16, 185, 129, .35);
+  box-shadow: 0 0 20px rgba(16, 185, 129, .07) inset
+}
+
+@media(max-width: 520px) {
+  .wc-top-row {
+    flex-direction: column
+  }
 }
 
 .wc-big {
-  font-size: 36px;
+  font-size: 44px;
   font-weight: 900;
   color: var(--text);
   line-height: 1
 }
 
 .wc-big small {
-  font-size: 16px;
+  font-size: 18px;
   color: var(--muted);
   font-weight: 600
 }
 
 .wc-delta {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  margin-top: 4px
+  margin-top: 8px
 }
 
 .wc-delta.loss {
@@ -300,18 +322,19 @@ main {
 .wc-input-row {
   display: flex;
   gap: 8px;
-  margin-top: 12px;
-  align-items: center
+  margin-top: 18px;
+  align-items: center;
+  width: 100%
 }
 
 .wc-input {
-  width: 90px;
-  padding: 8px 10px;
+  flex: 1;
+  padding: 10px 12px;
   font-size: 14px;
   font-weight: 700;
-  background: var(--surface2);
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--text);
   outline: none;
   text-align: center
@@ -322,73 +345,158 @@ main {
 }
 
 .wc-save-btn {
-  padding: 8px 14px;
-  font-size: 12px;
-  font-weight: 700;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 800;
   background: var(--primary);
   color: #0F172A;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
-  transition: opacity .15s
+  transition: opacity .15s;
+  white-space: nowrap
 }
 
 .wc-save-btn:hover {
   opacity: .85
 }
 
-.wc-milestone {
-  margin-top: 10px
+/* Goal panel */
+.wc-goal-row {
+  width: 100%;
+  margin-bottom: 10px
 }
 
-.wc-mile-next {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--primary)
+.wc-goal-row:last-child {
+  margin-bottom: 0
 }
 
-.wc-mile-end {
+.wc-goal-label {
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--green);
+  opacity: .7;
+  margin-bottom: 2px
+}
+
+.wc-goal-val {
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--green);
+  line-height: 1.1
+}
+
+.wc-goal-val span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted)
+}
+
+.wc-goal-sub {
   font-size: 10px;
   color: var(--muted);
-  margin-top: 2px
+  margin-top: 3px
 }
 
-.w7-table {
+.wc-goal-divider {
   width: 100%;
-  border-collapse: collapse;
-  font-size: 11px;
+  height: 1px;
+  background: rgba(16, 185, 129, .2);
+  margin: 10px 0
+}
+
+/* 14-day grid */
+.wc-grid-block {
   margin-top: 4px
 }
 
-.w7-table td {
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--border)
-}
-
-.w7-table tr:last-child td {
-  border-bottom: none
-}
-
-.w7-table .w7-day {
+.wc-week-label {
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .1em;
   color: var(--muted);
-  font-weight: 600;
-  font-size: 10px
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px
 }
 
-.w7-table .w7-val {
-  font-weight: 800;
-  text-align: right;
-  font-size: 13px
+.wc-week-loss {
+  font-size: 11px;
+  font-weight: 700
 }
 
-.w7-table .w7-today {
+.wc-days-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-bottom: 6px
+}
+
+.wc-sep {
+  height: 1px;
+  background: var(--border);
+  margin: 12px 0
+}
+
+.wc-day-cell {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 4px;
+  text-align: center
+}
+
+.wc-day-cell.wc-today {
+  border-color: var(--primary);
+  background: var(--pdim)
+}
+
+.wc-day-cell.wc-future {
+  opacity: .3
+}
+
+.wc-day-cell.wc-empty-past {
+  opacity: .5
+}
+
+.wc-cell-name {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .04em
+}
+
+.wc-today .wc-cell-name {
   color: var(--primary)
 }
 
-.w7-table .w7-empty {
+.wc-cell-num {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 1px
+}
+
+.wc-cell-w {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 5px
+}
+
+.wc-today .wc-cell-w {
+  color: var(--primary)
+}
+
+.wc-cell-w.no-data {
   color: var(--muted);
   opacity: .4;
-  text-align: right
+  font-weight: 400
 }
 
 .pr-row {

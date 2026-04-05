@@ -285,7 +285,8 @@ function subscribeToday() {
     if (s) {
       ST = s;
       DAY_CACHE[TODAY] = ST;
-      renderScoreStrip(); renderBody(); renderCups(); renderPills(); renderWork(); renderWeight(); renderWeekSection(); renderWorkButtons();
+      renderScoreStrip(); renderBody(); renderCups(); renderPills(); renderWork(); renderWorkButtons();
+      if (lsGet(LS_WEIGHT_OPEN) === 'true') renderWeight();
     }
   }, e => console.warn('snapshot error', e));
 }
@@ -308,6 +309,90 @@ async function prefetchWeek(days) {
   const missing = days.filter(d => DAY_CACHE[d] === undefined);
   if (!missing.length) return;
   await Promise.all(missing.map(d => loadDayState(d)));
+}
+
+async function prefetchWeightDates() {
+  function getFixedWeekBounds(dateString) {
+    const d = new Date(dateString + 'T12:00:00');
+    const day = d.getDate();
+    const y = d.getFullYear(), m = d.getMonth();
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    let wStart, wEnd;
+    if (day <= 7) { wStart = 1; wEnd = 7; }
+    else if (day <= 14) { wStart = 8; wEnd = 14; }
+    else if (day <= 21) { wStart = 15; wEnd = 21; }
+    else if (day <= 28) { wStart = 22; wEnd = 28; }
+    else { wStart = 29; wEnd = lastDay; }
+    return { y, m, wStart, wEnd };
+  }
+  function weekDates(y, m, wStart, wEnd) {
+    const dates = [];
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    for (let d = wStart; d <= Math.min(wEnd, lastDay); d++) {
+      dates.push(`${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+    }
+    return dates;
+  }
+  function prevWeekBounds(y, m, wStart) {
+    if (wStart === 1) {
+      const pm = m === 0 ? 11 : m - 1;
+      const py = m === 0 ? y - 1 : y;
+      const lastDay = new Date(py, pm + 1, 0).getDate();
+      return { y: py, m: pm, wStart: 29, wEnd: lastDay };
+    }
+    const starts = [1, 8, 15, 22, 29];
+    const ends = [7, 14, 21, 28, 31];
+    const idx = starts.indexOf(wStart);
+    return { y, m, wStart: starts[idx - 1], wEnd: ends[idx - 1] };
+  }
+  const cur = getFixedWeekBounds(TODAY);
+  const w1 = prevWeekBounds(cur.y, cur.m, cur.wStart);
+  const w2 = prevWeekBounds(w1.y, w1.m, w1.wStart);
+  const allDates = [
+    ...weekDates(cur.y, cur.m, cur.wStart, cur.wEnd),
+    ...weekDates(w1.y, w1.m, w1.wStart, w1.wEnd),
+    ...weekDates(w2.y, w2.m, w2.wStart, w2.wEnd)
+  ];
+  const missing = allDates.filter(d => DAY_CACHE[d] === undefined);
+  if (!missing.length) return;
+  await Promise.all(missing.map(d => loadDayState(d)));
+}
+
+/* ═══ LAZY SECTION HELPERS ═══ */
+const LS_WEIGHT_OPEN = 'kosbah_weight_open';
+const LS_WEIGHT_DATE = 'kosbah_weight_date';
+const LS_WEIGHT_DATA = 'kosbah_weight_data';
+const LS_WEEK_OPEN = 'kosbah_week_open';
+const LS_WEEK_DATE = 'kosbah_week_date';
+const LS_WEEK_DATA = 'kosbah_week_data';
+
+function lsGet(key) { try { return localStorage.getItem(key); } catch { return null; } }
+function lsSet(key, val) { try { localStorage.setItem(key, val); } catch { } }
+function lsGetJSON(key) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch { return null; } }
+function lsSetJSON(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch { } }
+
+function isSameEffectiveDay(storedDate) {
+  return storedDate === getEffectiveDate();
+}
+
+function renderLazyButton(containerId, label, onClick) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;padding:32px 0">
+      <button onclick="${onClick}()" style="
+        display:inline-flex;align-items:center;gap:10px;
+        padding:14px 32px;
+        background:var(--pdim);
+        border:1px solid var(--pborder);
+        border-radius:12px;
+        color:var(--primary);
+        font-size:14px;font-weight:800;
+        cursor:pointer;
+        transition:all .15s;
+        letter-spacing:.04em
+      ">${label}</button>
+    </div>`;
 }
 
 /* ═══ SCORES ═══ */
@@ -428,6 +513,7 @@ async function saveWeight() {
 }
 
 function renderWeight() {
+  // ── Block 1: today + delta ──
   const tw = getWeight(TODAY), yw = getWeight(dateStr(-1));
   document.getElementById('wc-today').innerHTML = tw ? `${tw}<small> kg</small>` : '—<small> kg</small>';
   const dEl = document.getElementById('wc-delta');
@@ -435,19 +521,259 @@ function renderWeight() {
     const diff = tw - yw;
     dEl.className = `wc-delta ${diff < 0 ? 'loss' : diff > 0 ? 'gain' : 'flat'}`;
     dEl.textContent = `${diff > 0 ? '+' : ''}${diff.toFixed(1)} kg vs yesterday`;
-  } else dEl.textContent = '';
-  const cw = tw || yw || 112;
-  const nm = Math.floor(cw / CFG.weightMilestoneStep) * CFG.weightMilestoneStep;
-  document.getElementById('wc-milestone').innerHTML = `<div class="wc-mile-next">🎯 Next milestone: ${nm} kg · ${(cw - nm).toFixed(1)} kg to go</div><div class="wc-mile-end">End goal: ${CFG.weightGoal} kg · ${(cw - CFG.weightGoal).toFixed(1)} kg total journey</div>`;
-  const tbl = document.getElementById('wc-week-table');
-  let rows = '';
-  for (let i = 6; i >= 0; i--) {
-    const d = dateStr(-i);
-    const w = getWeight(d);
-    const isT = d === TODAY;
-    rows += `<tr><td class="w7-day">${shortDay(d)} ${new Date(d + 'T12:00:00').getDate()}</td><td class="${w ? (isT ? 'w7-val w7-today' : 'w7-val') : 'w7-empty'}">${w ? w + ' kg' : '—'}</td></tr>`;
+  } else { dEl.className = 'wc-delta'; dEl.textContent = ''; }
+
+  // ── Projection: use 2 weeks before current calendar week ──
+  // Current week = fixed calendar week containing today (1–7, 8–14, 15–21, 22–28, 29–31)
+  function getFixedWeekBounds(dateString) {
+    const d = new Date(dateString + 'T12:00:00');
+    const day = d.getDate();
+    const y = d.getFullYear(), m = d.getMonth();
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    let wStart, wEnd;
+    if (day <= 7) { wStart = 1; wEnd = 7; }
+    else if (day <= 14) { wStart = 8; wEnd = 14; }
+    else if (day <= 21) { wStart = 15; wEnd = 21; }
+    else if (day <= 28) { wStart = 22; wEnd = 28; }
+    else { wStart = 29; wEnd = lastDay; }
+    return { y, m, wStart, wEnd };
   }
-  tbl.innerHTML = `<table class="w7-table">${rows}</table>`;
+
+  function weekDates(y, m, wStart, wEnd) {
+    const dates = [];
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    for (let d = wStart; d <= Math.min(wEnd, lastDay); d++) {
+      dates.push(`${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+    }
+    return dates;
+  }
+
+  function prevWeekBounds(y, m, wStart) {
+    if (wStart === 1) {
+      // go to previous month, last week
+      const pm = m === 0 ? 11 : m - 1;
+      const py = m === 0 ? y - 1 : y;
+      const lastDay = new Date(py, pm + 1, 0).getDate();
+      return { y: py, m: pm, wStart: 29, wEnd: lastDay };
+    }
+    const starts = [1, 8, 15, 22, 29];
+    const ends = [7, 14, 21, 28, 31];
+    const idx = starts.indexOf(wStart);
+    return { y, m, wStart: starts[idx - 1], wEnd: ends[idx - 1] };
+  }
+
+  const cur = getFixedWeekBounds(TODAY);
+  const w1 = prevWeekBounds(cur.y, cur.m, cur.wStart);           // week before current
+  const w2 = prevWeekBounds(w1.y, w1.m, w1.wStart);             // week before that
+  const w1Dates = weekDates(w1.y, w1.m, w1.wStart, w1.wEnd);
+  const w2Dates = weekDates(w2.y, w2.m, w2.wStart, w2.wEnd);
+  const calcDates = [...w2Dates, ...w1Dates];
+
+  // avg daily loss from those two weeks combined
+  const calcWeights = calcDates.map(d => getWeight(d)).filter(v => v != null);
+  let avgDailyLoss = null;
+  if (calcWeights.length >= 2) {
+    const totalLoss = calcWeights[0] - calcWeights[calcWeights.length - 1];
+    avgDailyLoss = totalLoss / (calcDates.length); // kg per day (positive = losing)
+  }
+
+  // ── Block 2: Goal ──
+  const cw = tw || yw || 0;
+  const goal = CFG.weightGoal;
+  const goalEl = document.getElementById('wc-goal-block');
+  if (cw && cw > goal) {
+    let weeksHtml = '', dateHtml = '';
+    if (avgDailyLoss && avgDailyLoss > 0) {
+      const kgLeft = cw - goal;
+      const daysLeft = Math.round(kgLeft / avgDailyLoss);
+      const weeksLeft = (daysLeft / 7).toFixed(1);
+      const finishDate = new Date(Date.now() + daysLeft * 864e5);
+      const finishStr = finishDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      const kgLeftProjected = kgLeft.toFixed(1);
+      weeksHtml = `<div class="wc-goal-row"><div class="wc-goal-label">Weeks to Goal</div><div class="wc-goal-val">${weeksLeft} <span style="font-size:14px;color:var(--muted)">weeks</span></div></div>`;
+      dateHtml = `<div class="wc-goal-row"><div class="wc-goal-label">Estimated Finish</div><div class="wc-goal-val" style="font-size:16px">${finishStr}</div></div>`;
+      goalEl.innerHTML = `
+        <div class="wc-goal-row"><div class="wc-goal-label">Target</div><div class="wc-goal-val amber">${goal} <span style="font-size:14px;color:var(--muted)">kg</span></div></div>
+        <div class="wc-goal-row"><div class="wc-goal-label">Weight Left</div><div class="wc-goal-val">${kgLeftProjected} <span style="font-size:14px;color:var(--muted)">kg to go</span></div><div class="wc-goal-sub">Based on last 2-week avg · ${Math.abs(avgDailyLoss).toFixed(2)} kg/day</div></div>
+        ${weeksHtml}${dateHtml}`;
+    } else {
+      const kgLeft = cw > 0 ? (cw - goal).toFixed(1) : '—';
+      goalEl.innerHTML = `
+        <div class="wc-goal-row"><div class="wc-goal-label">Target</div><div class="wc-goal-val amber">${goal} <span style="font-size:14px;color:var(--muted)">kg</span></div></div>
+        <div class="wc-goal-row"><div class="wc-goal-label">Weight Left</div><div class="wc-goal-val">${kgLeft} <span style="font-size:14px;color:var(--muted)">kg to go</span></div><div class="wc-goal-sub">Log more data for projection</div></div>`;
+    }
+  } else if (cw && cw <= goal) {
+    goalEl.innerHTML = `<div class="wc-goal-row"><div class="wc-goal-label">Goal</div><div class="wc-goal-val green">🎉 ${goal} kg reached!</div></div>`;
+  } else {
+    goalEl.innerHTML = `<div class="wc-goal-row"><div class="wc-goal-label">Target</div><div class="wc-goal-val amber">${goal} <span style="font-size:14px;color:var(--muted)">kg</span></div></div>`;
+  }
+
+  // ── Block 3: 14-day grid ──
+  // Previous week + current week (fixed calendar weeks)
+  const prevW = prevWeekBounds(cur.y, cur.m, cur.wStart);
+  const prevDates = weekDates(prevW.y, prevW.m, prevW.wStart, prevW.wEnd);
+  const curDates = weekDates(cur.y, cur.m, cur.wStart, cur.wEnd);
+
+  function buildRow(dates) {
+    // always 7 cells, pad with nulls for short weeks
+    const cells = [];
+    for (let i = 0; i < 7; i++) {
+      const d = dates[i] || null;
+      cells.push(d);
+    }
+    return cells.map(d => {
+      if (!d) return `<div class="wc-day-cell wc-future"><div class="wc-cell-name">—</div><div class="wc-cell-num">—</div><div class="wc-cell-w no-data">—</div></div>`;
+      const isFuture = d > TODAY;
+      const isToday = d === TODAY;
+      const w = getWeight(d);
+      const dayName = new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+      const dayNum = new Date(d + 'T12:00:00').getDate();
+      const monthShort = new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short' });
+      let cls = 'wc-day-cell';
+      if (isToday) cls += ' wc-today';
+      else if (isFuture) cls += ' wc-future';
+      else if (!w) cls += ' wc-empty-past';
+      const wHtml = w
+        ? `<div class="wc-cell-w">${w}</div>`
+        : `<div class="wc-cell-w no-data">—</div>`;
+      return `<div class="${cls}"><div class="wc-cell-name">${dayName}</div><div class="wc-cell-num">${monthShort} ${dayNum}</div>${wHtml}</div>`;
+    }).join('');
+  }
+
+  function weekLoss(dates) {
+    const vals = dates.map(d => getWeight(d)).filter(v => v != null);
+    if (vals.length < 2) return null;
+    return (vals[vals.length - 1] - vals[0]).toFixed(1);
+  }
+
+  function lossLabel(loss) {
+    if (loss == null) return '';
+    const num = parseFloat(loss);
+    if (num === 0) return '';
+    const sign = num < 0 ? '−' : '+';
+    const color = num < 0 ? 'var(--green)' : 'var(--red)';
+    const abs = Math.abs(num);
+    const kg = Math.floor(abs);
+    const g = Math.round((abs - kg) * 1000);
+    const text = kg > 0 && g > 0 ? `${sign}${kg} kg ${g} g`
+      : kg > 0 ? `${sign}${kg} kg`
+        : `${sign}${g} g`;
+    return `<span class="wc-week-loss" style="color:${color}">${text}</span>`;
+  }
+
+  const curMonthName = new Date(cur.y, cur.m, cur.wStart).toLocaleDateString('en-US', { month: 'short' });
+  const prevMonthName = new Date(prevW.y, prevW.m, prevW.wStart).toLocaleDateString('en-US', { month: 'short' });
+  const w2MonthName = new Date(w2.y, w2.m, w2.wStart).toLocaleDateString('en-US', { month: 'short' });
+
+  document.getElementById('wc-grid-block').innerHTML = `
+    <div class="wc-week-label">${curMonthName} ${cur.wStart}–${cur.wEnd} ${lossLabel(weekLoss(curDates))}</div>
+    <div class="wc-days-row">${buildRow(curDates)}</div>
+    <div class="wc-sep"></div>
+    <div class="wc-week-label">${prevMonthName} ${prevW.wStart}–${prevW.wEnd} ${lossLabel(weekLoss(prevDates))}</div>
+    <div class="wc-days-row">${buildRow(prevDates)}</div>
+    <div class="wc-week-label" style="margin-top:10px">${w2MonthName} ${w2.wStart}–${w2.wEnd} ${lossLabel(weekLoss(w2Dates))}</div>
+    <div class="wc-days-row">${buildRow(w2Dates)}</div>
+  `;
+}
+
+/* ═══ WEIGHT LAZY ═══ */
+function initWeightLazy() {
+  const wasOpen = lsGet(LS_WEIGHT_OPEN) === 'true';
+  const savedDate = lsGet(LS_WEIGHT_DATE);
+  const sameDay = isSameEffectiveDay(savedDate);
+
+  if (wasOpen && sameDay) {
+    const cached = lsGetJSON(LS_WEIGHT_DATA);
+    if (cached) {
+      Object.entries(cached).forEach(([dk, val]) => { if (DAY_CACHE[dk] === undefined) DAY_CACHE[dk] = val; });
+    }
+    expandWeightSection();
+  } else {
+    renderLazyButton('weight-lazy-container', '⚖️ Show Weight Tracker', 'openWeightSection');
+  }
+}
+
+async function openWeightSection() {
+  showLoader();
+  await prefetchWeightDates();
+  lsSet(LS_WEIGHT_OPEN, 'true');
+  lsSet(LS_WEIGHT_DATE, getEffectiveDate());
+  const relevantKeys = Object.keys(DAY_CACHE);
+  const snapshot = {};
+  relevantKeys.forEach(k => { snapshot[k] = DAY_CACHE[k]; });
+  lsSetJSON(LS_WEIGHT_DATA, snapshot);
+  expandWeightSection();
+  hideLoader();
+}
+
+function expandWeightSection() {
+  const el = document.getElementById('weight-lazy-container');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="wc-top-row">
+      <div class="wc-panel wc-log-panel">
+        <div class="wc-big" id="wc-today">—<small> kg</small></div>
+        <div class="wc-delta" id="wc-delta"></div>
+        <div class="wc-input-row">
+          <input type="number" step="0.1" class="wc-input" id="wc-input" placeholder="Enter kg">
+          <button class="wc-save-btn" onclick="saveWeight()">Save</button>
+        </div>
+      </div>
+      <div class="wc-panel wc-goal-panel" id="wc-goal-block"></div>
+    </div>
+    <div class="wc-grid-block" id="wc-grid-block"></div>`;
+  // wc-input listener attached dynamically in expandWeightSection()
+  renderWeight();
+}
+
+/* ═══ WEEK LAZY ═══ */
+function initWeekLazy() {
+  const wasOpen = lsGet(LS_WEEK_OPEN) === 'true';
+  const savedDate = lsGet(LS_WEEK_DATE);
+  const sameDay = isSameEffectiveDay(savedDate);
+
+  if (wasOpen && sameDay) {
+    const cached = lsGetJSON(LS_WEEK_DATA);
+    if (cached) {
+      Object.entries(cached).forEach(([dk, val]) => { if (DAY_CACHE[dk] === undefined) DAY_CACHE[dk] = val; });
+    }
+    expandWeekSection();
+  } else {
+    renderLazyButton('week-lazy-container', '📅 Show Your Week', 'openWeekSection');
+  }
+}
+
+async function openWeekSection() {
+  showLoader();
+  const allDays = [];
+  for (let w = 0; w >= -4; w--) {
+    const wk = getWeekBounds(w);
+    wk.days.forEach(d => allDays.push(d));
+  }
+  for (let i = 1; i <= 7; i++) allDays.push(dateStr(-i));
+  await prefetchWeek(allDays);
+  await prefetchWeightDates();
+  lsSet(LS_WEEK_OPEN, 'true');
+  lsSet(LS_WEEK_DATE, getEffectiveDate());
+  const snapshot = {};
+  Object.keys(DAY_CACHE).forEach(k => { snapshot[k] = DAY_CACHE[k]; });
+  lsSetJSON(LS_WEEK_DATA, snapshot);
+  expandWeekSection();
+  hideLoader();
+}
+
+async function expandWeekSection() {
+  const el = document.getElementById('week-lazy-container');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="week-nav" id="week-nav"></div>
+    <div class="week-strip" id="week-strip"></div>
+    <div id="day-detail-container"></div>
+    <div style="overflow-x:auto">
+      <table class="week-table" id="week-table"></table>
+    </div>
+    <div id="month-grid-container"></div>`;
+  await renderWeekSection();
 }
 
 /* ═══ PRAYER API ═══ */
@@ -772,7 +1098,7 @@ async function startSession(type) {
 document.getElementById('short-btn').addEventListener('click', () => startSession('short'));
 document.getElementById('medium-btn').addEventListener('click', () => startSession('medium'));
 document.getElementById('long-btn').addEventListener('click', () => startSession('long'));
-document.getElementById('wc-input').addEventListener('keydown', e => { if (e.key === 'Enter') saveWeight(); });
+// wc-input listener attached dynamically in expandWeightSection()
 
 /* ═══ YOUR WEEK ═══ */
 let weekOff = 0, selDay = null;
@@ -798,6 +1124,7 @@ async function renderWeekSection() {
   const prefetchDays = [...wk.days];
   for (let i = 1; i <= 7; i++) prefetchDays.push(dateStr(-i));
   await prefetchWeek(prefetchDays);
+  await prefetchWeightDates();
   renderLastWeekStrip();
   document.getElementById('week-nav').innerHTML = `<button class="week-nav-btn" onclick="changeWeek(-1)">‹</button><div class="week-nav-label">${shortDate(wk.monStr)} — ${shortDate(wk.sunStr)}</div><button class="week-nav-btn" onclick="changeWeek(1)" ${weekOff >= 0 ? 'disabled' : ''}>›</button>`;
   document.getElementById('week-strip').innerHTML = wk.days.map(d => {
@@ -970,18 +1297,41 @@ function renderDayArch() {
 }
 
 /* ═══ QUOTES ═══ */
-let QUOTES_FS = [];
 let quoteIdx = 0, quoteAnchored = false;
 
-async function loadQuotes() {
-  try {
-    const snap = await userRef().collection('quotes').orderBy('num').get();
-    QUOTES_FS = snap.docs.map(d => d.data());
-  } catch (e) {
-    console.warn('Quotes load failed', e);
-    QUOTES_FS = [];
-  }
-}
+const QUOTES_FS = [
+  { num: 1, html: "If you want to introduce value:<br><br>• Prove it.&nbsp; • Document it.&nbsp; • Show it.", tags: ["Value", "Execution"] },
+  { num: 2, html: "If you are everything to everyone, you are <strong>nothing to anyone</strong>.<br>Stand for something. Pick your ground.", tags: ["Identity", "Focus"] },
+  { num: 3, html: "<strong>Copywriting</strong> is using words to persuade someone to take action or think a certain way.", tags: ["Skill", "Copywriting"] },
+  { num: 4, html: "Focus on <strong>monthly income</strong>, not your bank balance.<br>Reinvest the extra money so your income keeps growing.", tags: ["Money", "Mindset"] },
+  { num: 5, html: "The basics matter most:<br>Show up. Stay consistent. Learn real skills before chasing big moves.", tags: ["Discipline", "Consistency"] },
+  { num: 6, html: "Failure isn't starting over.<br>It's just another <strong>experience point</strong>.", tags: ["Resilience", "Growth"] },
+  { num: 7, html: "The solution in two lines:<br><br>• Admit your mistake.<br>• Use what you have and keep going.", tags: ["Accountability", "Action"] },
+  { num: 8, html: "The normal phase:<br>Work <strong>6 days a week, 12 hours a day</strong>.<br>You have energy now — not experience.", tags: ["Work Ethic", "Phase"] },
+  { num: 9, html: "When you're broke, live <strong>defensively</strong>.<br>Cut your spending to the minimum so you can bet on yourself.", tags: ["Finance", "Survival Mode"] },
+  { num: 10, html: "If you're broke:<br>• No restaurants&nbsp; • No new clothes&nbsp; • Only free social events", tags: ["Finance", "Discipline"] },
+  { num: 11, html: "Be patient with results.<br>Be impatient with action.<br><strong>Movement cures anxiety.</strong>", tags: ["Mindset", "Action"] },
+  { num: 12, html: "Build a <strong>cash reserve</strong> so you can move from survival mode to growth mode.", tags: ["Finance", "Strategy"] },
+  { num: 13, html: "The golden rule:<br>Start. Learn. Don't quit.<br>The game is won by the <strong>last person still standing</strong>.", tags: ["Persistence", "Mindset"] },
+  { num: 14, html: "\"Fake it till you make it\" is wrong.<br>The real rule: <strong>do the work before you talk about it.</strong>", tags: ["Integrity", "Work Ethic"] },
+  { num: 15, html: "Content alone won't make you successful.<br><strong>Proof and context behind it</strong> are what convince people.", tags: ["Marketing", "Trust"] },
+  { num: 16, html: "If someone is ahead of you, <strong>double your effort</strong> until you catch them — and pass them.", tags: ["Competition", "Drive"] },
+  { num: 17, html: "Don't play by other people's rules.<br><strong>Set your own.</strong>", tags: ["Independence", "Mindset"] },
+  { num: 18, html: "Choose the decision that creates the <strong>better story</strong>.<br>Nobody regrets the bold stories.", tags: ["Courage", "Decision-Making"] },
+  { num: 19, html: "Long routines and complicated <strong>morning routines</strong> are often distractions.<br>More work produces more results.", tags: ["Productivity", "Focus"] },
+  { num: 20, html: "Identity is mostly a lie.<br>What you <strong>do repeatedly</strong> is who you become.", tags: ["Identity", "Habits"] },
+  { num: 21, html: "Passive income is mostly a myth.<br>Everything costs time.<br>Focus on <strong>how much you earn per hour</strong>.", tags: ["Finance", "Clarity"] },
+  { num: 22, html: "If you can't afford to buy it <strong>twice</strong>, don't buy it once.<br>Always think in <strong>hours of work</strong>, not price.", tags: ["Finance", "Discipline"] },
+  { num: 23, html: "Check your <strong>bank account before social media</strong>.<br>What gets measured gets improved.", tags: ["Habits", "Finance"] },
+  { num: 24, html: "Buy <strong>time</strong>, not things.<br>Delegate anything that costs less than your hourly rate.", tags: ["Leverage", "Time"] },
+  { num: 25, html: "Real wealth isn't money or assets.<br>It's <strong>education and skills</strong>.<br>A skilled person doesn't need inheritance.", tags: ["Wealth", "Skills"] },
+  { num: 26, html: "Focus is the number of things you say <strong>no</strong> to.<br>Success in one thing beats <strong>seven fake income streams</strong>.", tags: ["Focus", "Strategy"] },
+  { num: 27, html: "The real work starts <strong>after motivation disappears</strong>.", tags: ["Discipline", "Consistency"] },
+  { num: 28, html: "Don't follow your passion.<br>Follow the thing you're <strong>good at and people are willing to pay for</strong>.", tags: ["Career", "Clarity"] },
+  { num: 29, html: "Don't focus on networking early.<br>Focus on getting good at your work.<br>When you succeed, <strong>people will come to you</strong>.", tags: ["Growth", "Skill-First"] },
+  { num: 30, html: "The person who <strong>shows up every day</strong> is very hard to beat.", tags: ["Consistency", "Discipline"] },
+  { num: 31, html: "Every goal has a price — <strong>paid or abandoned</strong>, but never complained about. The wealthy buy time. The ambitious invest their time in skills. The lazy waste their time on distraction.", tags: ["mindset", "time", "ambition"] }
+];
 
 function renderQuote() {
   if (!QUOTES_FS.length) return;
@@ -1020,18 +1370,16 @@ async function init() {
   DAY_CACHE[TODAY] = ST;
   renderHeader();
   renderScoreStrip();
-  renderLastWeekStrip();
-  renderWeight();
   renderProgress();
   renderBody();
   renderCups();
   renderWork();
-  await loadQuotes();
   renderQuote();
-  await renderWeekSection();
   await loadPrayers();
   renderPrayers(); renderCups(); renderPills(); renderProgress(); renderDayArch();
   loadTomorrowFajr();
+  initWeightLazy();
+  initWeekLazy();
   subscribeToday();
   hideLoader();
 }

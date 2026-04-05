@@ -245,23 +245,10 @@
       <div class="section-divider">
         <div class="sd-line"></div>
         <div class="sd-title">Weight Tracker</div>
-        <div class="sd-sub">Log daily · hit every 2 kg milestone</div>
+        <div class="sd-sub">Log daily · stay on target</div>
       </div>
       <div class="card">
-        <div class="weight-card">
-          <div class="wc-left">
-            <div class="wc-big" id="wc-today">—<small> kg</small></div>
-            <div class="wc-delta" id="wc-delta"></div>
-            <div class="wc-input-row">
-              <input type="number" step="5.1" class="wc-input" id="wc-input" placeholder="93 kg">
-              <button class="wc-save-btn" onclick="saveWeight()">Save</button>
-            </div>
-            <div class="wc-milestone" id="wc-milestone"></div>
-          </div>
-          <div class="wc-right">
-            <div id="wc-week-table"></div>
-          </div>
-        </div>
+        <div id="weight-lazy-container"></div>
       </div>
 
       <!-- 7. YOUR WEEK -->
@@ -271,13 +258,7 @@
         <div class="sd-sub">Tap any day to see details · navigate weeks</div>
       </div>
       <div class="card">
-        <div class="week-nav" id="week-nav"></div>
-        <div class="week-strip" id="week-strip"></div>
-        <div id="day-detail-container"></div>
-        <div style="overflow-x:auto">
-          <table class="week-table" id="week-table"></table>
-        </div>
-        <div id="month-grid-container"></div>
+        <div id="week-lazy-container"></div>
       </div>
 
     </main>
