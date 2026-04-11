@@ -607,7 +607,9 @@ function renderWeight() {
     if (avgDailyLoss && avgDailyLoss > 0) {
       const kgLeft = cw - goal;
       const daysLeft = Math.round(kgLeft / avgDailyLoss);
-      const weeksLeft = (daysLeft / 7).toFixed(1);
+      const weeksWhole = Math.floor(daysLeft / 7);
+      const daysRem = daysLeft % 7;
+      const weeksLeft = weeksWhole;
       const finishDate = new Date(Date.now() + daysLeft * 864e5);
       const finishStr = finishDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
       const kgLeftKg = Math.floor(kgLeft);
@@ -624,17 +626,19 @@ function renderWeight() {
           </div>
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
             <div style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--green);opacity:.7;margin-bottom:6px">Finish</div>
-            <div style="font-size:13px;font-weight:900;color:var(--red)">🗓️ ${finishStr}</div>
-            <div style="font-size:11px;color:var(--red);margin-top:2px;font-weight:700">${weeksLeft} weeks away</div>
+            <div style="font-size:13px;font-weight:900;color:var(--text)">🗓️ ${finishStr}</div>
+            <div style="font-size:11px;margin-top:2px;font-weight:700">
+              <span style="color:var(--red)">${weeksWhole} week${weeksWhole !== 1 ? 's' : ''}</span>${daysRem > 0 ? ` <span style="color:var(--primary)">${daysRem} day${daysRem !== 1 ? 's' : ''}</span>` : ''} <span style="color:var(--muted)">away</span>
+            </div>
           </div>
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
             <div style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--green);opacity:.7;margin-bottom:6px">Pace</div>
-            <div style="font-size:22px;font-weight:900;color:var(--blue)">${Math.round(Math.abs(avgDailyLoss) * 1000)}</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px">g/day · last 7-day avg</div>
+            <div style="font-size:22px;font-weight:900;color:var(--blue)">${Math.round(Math.abs(avgDailyLoss) * 1000)}<span style="font-size:13px;font-weight:700;color:var(--muted);margin-left:4px">g/day</span></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">last 7-day avg</div>
           </div>
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
             <div style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--green);opacity:.7;margin-bottom:6px">Weight Left</div>
-            <div style="font-size:18px;font-weight:900;color:var(--text)">${kgLeftProjected}</div>
+            <div style="font-size:18px;font-weight:900;color:var(--muted)">${kgLeftProjected}</div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px">to go</div>
           </div>
         </div>`;
