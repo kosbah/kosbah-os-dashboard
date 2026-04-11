@@ -449,8 +449,9 @@ async function renderLastWeekStrip() {
   if (!el) return;
   let weightSum = 0, weightCount = 0;
   let healthTotal = 0, waterTotal = 0, workMins = 0, cnt = 0;
+  const effectiveToday = getEffectiveDate();
   for (let i = 7; i >= 1; i--) {
-    const d = dateStr(-i);
+    const d = dateStr(effectiveToday === dateStr(0) ? -i : -i - 1);
     const s = DAY_CACHE[d];
     if (!s) continue;
     cnt++;
@@ -575,15 +576,25 @@ function renderWeight() {
   const w1Dates = weekDates(w1.y, w1.m, w1.wStart, w1.wEnd);
   const w2Dates = weekDates(w2.y, w2.m, w2.wStart, w2.wEnd);
 
-  // ── Projection: last 10 days (excluding today) ──
+  // ── Projection: last 7 days (excluding today, Fajr-aligned) ──
   const calcDates = [];
-  for (let i = 10; i >= 1; i--) calcDates.push(dateStr(-i));
+  const projBase = TODAY === dateStr(0) ? 0 : -1;
+  for (let i = 7; i >= 1; i--) calcDates.push(dateStr(projBase - i));
 
-  const calcWeights = calcDates.map(d => getWeight(d)).filter(v => v != null);
+  const calcEntries = calcDates
+    .map((d, i) => ({ d, w: getWeight(d), i }))
+    .filter(e => e.w != null);
   let avgDailyLoss = null;
-  if (calcWeights.length >= 2) {
-    const totalLoss = calcWeights[0] - calcWeights[calcWeights.length - 1];
-    avgDailyLoss = totalLoss / calcDates.length; // kg per day (positive = losing)
+  if (calcEntries.length >= 2) {
+    let totalRate = 0, pairCount = 0;
+    for (let i = 0; i < calcEntries.length - 1; i++) {
+      const a = calcEntries[i], b = calcEntries[i + 1];
+      const dayGap = b.i - a.i;
+      const loss = (a.w - b.w) / dayGap; // kg per day (positive = losing)
+      totalRate += loss;
+      pairCount++;
+    }
+    avgDailyLoss = totalRate / pairCount;
   }
 
   // ── Block 2: Goal ──
@@ -603,7 +614,7 @@ function renderWeight() {
       dateHtml = `<div class="wc-goal-row"><div class="wc-goal-label">Estimated Finish</div><div class="wc-goal-val" style="font-size:16px">${finishStr}</div></div>`;
       goalEl.innerHTML = `
         <div class="wc-goal-row"><div class="wc-goal-label">Target</div><div class="wc-goal-val" style="color:var(--primary)">🎯 ${goal} <span style="font-size:14px;color:var(--muted)">kg</span></div></div>
-        <div class="wc-goal-row"><div class="wc-goal-label">Weight Left</div><div class="wc-goal-val" style="color:var(--text);font-size:22px">${kgLeftProjected} <span style="font-size:14px;color:var(--muted)">kg to go</span></div><div class="wc-goal-sub">Based on last 10-day avg · <span style="color:var(--blue)">${Math.round(Math.abs(avgDailyLoss) * 1000)} g/day</span></div></div>
+        <div class="wc-goal-row"><div class="wc-goal-label">Weight Left</div><div class="wc-goal-val" style="color:var(--text);font-size:22px">${kgLeftProjected} <span style="font-size:14px;color:var(--muted)">kg to go</span></div><div class="wc-goal-sub">Based on last 7-day avg · <span style="color:var(--blue)">${Math.round(Math.abs(avgDailyLoss) * 1000)} g/day</span></div></div>
         <div class="wc-goal-row"><div class="wc-goal-label">Weeks to Goal</div><div class="wc-goal-val" style="color:var(--primary)">${weeksLeft} <span style="font-size:14px;color:var(--muted)">weeks</span></div></div>
         <div class="wc-goal-row"><div class="wc-goal-label">Estimated Finish</div><div class="wc-goal-val" style="color:var(--text);font-size:16px">🗓️ ${finishStr}</div></div>`;
     } else {
@@ -824,7 +835,6 @@ async function loadPrayers() {
     PRAYERS = data.timings;
     HIJRI_DATA = data.date.hijri;
     document.getElementById('h-hijri').textContent = `${ordinal(parseInt(HIJRI_DATA.day, 10))} ${HIJRI_DATA.month.en} ${HIJRI_DATA.year}`;
-    document.getElementById('h-hijri-year').textContent = '';
     renderProgress();
   } catch {
     PRAYERS = { Fajr: '04:42', Dhuhr: '12:04', Asr: '15:27', Maghrib: '18:00', Isha: '19:18' };
