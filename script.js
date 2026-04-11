@@ -1403,7 +1403,7 @@ const QUOTES_FS = [
 
 function renderQuote() {
   if (!QUOTES_FS.length) return;
-  if (!quoteAnchored) { quoteIdx = (new Date().getDate() - 1) % QUOTES_FS.length; quoteAnchored = true; }
+  if (!quoteAnchored) { quoteIdx = (parseInt(TODAY.slice(8, 10), 10) - 1) % QUOTES_FS.length; quoteAnchored = true; }
   const q = QUOTES_FS[quoteIdx % QUOTES_FS.length];
   document.getElementById('qtext').innerHTML = q.html;
   document.getElementById('qnum').textContent = `${q.num} / ${QUOTES_FS.length}`;
