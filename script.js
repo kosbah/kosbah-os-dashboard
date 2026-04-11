@@ -404,9 +404,9 @@ function calcScores(s) {
   const health = Math.round((bd / 13) * 100);
   const water = Math.round(((s.cups || []).filter(Boolean).length / 8) * 100);
   const meds = s.meds || [];
-  const medTotal = meds.length || 1;
+  const medTotal = meds.length;
   const medDone = meds.filter(m => m.taken).length;
-  const medicine = Math.round((medDone / medTotal) * 100);
+  const medicine = medTotal === 0 ? 100 : Math.round((medDone / medTotal) * 100);
   const effectiveDay = s.date || getEffectiveDate();
   const isFriday = new Date(effectiveDay + 'T12:00:00').getDay() === 5;
   const totalMins = s.work ? (s.work.short.sessions * 30 + s.work.medium.sessions * 50 + s.work.long.sessions * 90) : 0;
