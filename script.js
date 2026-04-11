@@ -609,14 +609,34 @@ function renderWeight() {
       const weeksLeft = (daysLeft / 7).toFixed(1);
       const finishDate = new Date(Date.now() + daysLeft * 864e5);
       const finishStr = finishDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-      const kgLeftProjected = kgLeft.toFixed(1);
+      const kgLeftKg = Math.floor(kgLeft);
+      const kgLeftG = Math.round((kgLeft - kgLeftKg) * 1000);
+      const kgLeftProjected = kgLeftG > 0 ? `${kgLeftKg} kg ${kgLeftG} g` : `${kgLeftKg} kg`;
       weeksHtml = `<div class="wc-goal-row"><div class="wc-goal-label">Weeks to Goal</div><div class="wc-goal-val">${weeksLeft} <span style="font-size:14px;color:var(--muted)">weeks</span></div></div>`;
       dateHtml = `<div class="wc-goal-row"><div class="wc-goal-label">Estimated Finish</div><div class="wc-goal-val" style="font-size:16px">${finishStr}</div></div>`;
       goalEl.innerHTML = `
-        <div class="wc-goal-row"><div class="wc-goal-label">Target</div><div class="wc-goal-val" style="color:var(--primary)">🎯 ${goal} <span style="font-size:14px;color:var(--muted)">kg</span></div></div>
-        <div class="wc-goal-row"><div class="wc-goal-label">Weight Left</div><div class="wc-goal-val" style="color:var(--text);font-size:22px">${kgLeftProjected} <span style="font-size:14px;color:var(--muted)">kg to go</span></div><div class="wc-goal-sub">Based on last 7-day avg · <span style="color:var(--blue)">${Math.round(Math.abs(avgDailyLoss) * 1000)} g/day</span></div></div>
-        <div class="wc-goal-row"><div class="wc-goal-label">Weeks to Goal</div><div class="wc-goal-val" style="color:var(--primary)">${weeksLeft} <span style="font-size:14px;color:var(--muted)">weeks</span></div></div>
-        <div class="wc-goal-row"><div class="wc-goal-label">Estimated Finish</div><div class="wc-goal-val" style="color:var(--text);font-size:16px">🗓️ ${finishStr}</div></div>`;
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--green);opacity:.7;margin-bottom:6px">Target</div>
+            <div style="font-size:22px;font-weight:900;color:var(--primary)">🎯 ${goal}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">kg</div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--green);opacity:.7;margin-bottom:6px">Finish</div>
+            <div style="font-size:13px;font-weight:900;color:var(--red)">🗓️ ${finishStr}</div>
+            <div style="font-size:11px;color:var(--red);margin-top:2px;font-weight:700">${weeksLeft} weeks away</div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--green);opacity:.7;margin-bottom:6px">Pace</div>
+            <div style="font-size:22px;font-weight:900;color:var(--blue)">${Math.round(Math.abs(avgDailyLoss) * 1000)}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">g/day · last 7-day avg</div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--green);opacity:.7;margin-bottom:6px">Weight Left</div>
+            <div style="font-size:18px;font-weight:900;color:var(--text)">${kgLeftProjected}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">to go</div>
+          </div>
+        </div>`;
     } else {
       const kgLeft = cw > 0 ? (cw - goal).toFixed(1) : '—';
       goalEl.innerHTML = `
