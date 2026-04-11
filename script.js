@@ -527,7 +527,8 @@ function renderWeight() {
       dEl.textContent = '= Same as yesterday';
     } else {
       dEl.className = `wc-delta ${diff < 0 ? 'loss' : 'gain'}`;
-      dEl.textContent = `${diff > 0 ? '+' : ''}${diff.toFixed(1)} kg vs yesterday`;
+      const diffG = Math.round(Math.abs(diff) * 1000);
+      dEl.textContent = `${diff > 0 ? '+' : '−'}${diffG} g vs yesterday`;
     }
   } else { dEl.className = 'wc-delta'; dEl.textContent = ''; }
 
@@ -693,13 +694,8 @@ function renderWeight() {
     if (num === 0) return '';
     const sign = num < 0 ? '−' : '+';
     const color = num < 0 ? 'var(--green)' : 'var(--red)';
-    const abs = Math.abs(num);
-    const kg = Math.floor(abs);
-    const g = Math.round((abs - kg) * 1000);
-    const text = kg > 0 && g > 0 ? `${sign}${kg} kg ${g} g`
-      : kg > 0 ? `${sign}${kg} kg`
-        : `${sign}${g} g`;
-    return `<span class="wc-week-loss" style="color:${color}">${text}</span>`;
+    const g = Math.round(Math.abs(num) * 1000);
+    return `<span class="wc-week-loss" style="color:${color}">${sign}${g} g</span>`;
   }
 
   const curMonthName = new Date(cur.y, cur.m, cur.wStart).toLocaleDateString('en-US', { month: 'short' });
