@@ -20,7 +20,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-db.settings({ merge: true });
 
 function signInWithGoogle() {
   showLoader();
@@ -140,7 +139,7 @@ const DEFAULT_MEDS = [
 ];
 
 /* ═══ STATE ═══ */
-let TODAY, SK;
+let TODAY, SK, ST;
 let PRAYERS = null, TOMORROW_FAJR = null, HIJRI_DATA = null;
 let DAY_CACHE = {};
 let unsubscribeToday = null;
@@ -448,7 +447,7 @@ function renderScoreStrip() {
 async function renderLastWeekStrip() {
   const el = document.getElementById('last-week-strip');
   if (!el) return;
-  let weightFirst = null, weightLast = null;
+  let weightSum = 0, weightCount = 0;
   let healthTotal = 0, waterTotal = 0, workMins = 0, cnt = 0;
   for (let i = 7; i >= 1; i--) {
     const d = dateStr(-i);
@@ -456,16 +455,15 @@ async function renderLastWeekStrip() {
     if (!s) continue;
     cnt++;
     const w = s.weight && s.weight.value != null ? s.weight.value : null;
-    if (w && !weightFirst) weightFirst = w;
-    if (w) weightLast = w;
+    if (w != null) { weightSum += w; weightCount++; }
     healthTotal += calcScores(s).health;
     waterTotal += calcScores(s).water;
     workMins += s.work ? (s.work.short.sessions * 30 + s.work.medium.sessions * 50 + s.work.long.sessions * 90) : 0;
   }
   if (cnt === 0) { el.innerHTML = ''; return; }
-  const weightDelta = (weightFirst != null && weightLast != null) ? (weightLast - weightFirst).toFixed(1) : null;
-  const wdColor = weightDelta == null ? 'var(--muted)' : weightDelta < 0 ? 'var(--green)' : weightDelta > 0 ? 'var(--red)' : 'var(--muted)';
-  const wdText = weightDelta == null ? '— kg' : `${weightDelta > 0 ? '+' : ''}${weightDelta} kg`;
+  const weightAvg = weightCount > 0 ? (weightSum / weightCount).toFixed(1) : null;
+  const wdColor = weightAvg != null ? 'var(--blue)' : 'var(--muted)';
+  const wdText = weightAvg != null ? `${weightAvg} kg` : '— kg';
   const hydPct = Math.round(waterTotal / cnt);
   const healthPct = Math.round(healthTotal / cnt);
   const workH = Math.floor(workMins / 60);
@@ -572,18 +570,20 @@ function renderWeight() {
   }
 
   const cur = getFixedWeekBounds(TODAY);
-  const w1 = prevWeekBounds(cur.y, cur.m, cur.wStart);           // week before current
-  const w2 = prevWeekBounds(w1.y, w1.m, w1.wStart);             // week before that
+  const w1 = prevWeekBounds(cur.y, cur.m, cur.wStart);
+  const w2 = prevWeekBounds(w1.y, w1.m, w1.wStart);
   const w1Dates = weekDates(w1.y, w1.m, w1.wStart, w1.wEnd);
   const w2Dates = weekDates(w2.y, w2.m, w2.wStart, w2.wEnd);
-  const calcDates = [...w2Dates, ...w1Dates];
 
-  // avg daily loss from those two weeks combined
+  // ── Projection: last 10 days (excluding today) ──
+  const calcDates = [];
+  for (let i = 10; i >= 1; i--) calcDates.push(dateStr(-i));
+
   const calcWeights = calcDates.map(d => getWeight(d)).filter(v => v != null);
   let avgDailyLoss = null;
   if (calcWeights.length >= 2) {
     const totalLoss = calcWeights[0] - calcWeights[calcWeights.length - 1];
-    avgDailyLoss = totalLoss / (calcDates.length); // kg per day (positive = losing)
+    avgDailyLoss = totalLoss / calcDates.length; // kg per day (positive = losing)
   }
 
   // ── Block 2: Goal ──
@@ -603,7 +603,7 @@ function renderWeight() {
       dateHtml = `<div class="wc-goal-row"><div class="wc-goal-label">Estimated Finish</div><div class="wc-goal-val" style="font-size:16px">${finishStr}</div></div>`;
       goalEl.innerHTML = `
         <div class="wc-goal-row"><div class="wc-goal-label">Target</div><div class="wc-goal-val" style="color:var(--primary)">🎯 ${goal} <span style="font-size:14px;color:var(--muted)">kg</span></div></div>
-        <div class="wc-goal-row"><div class="wc-goal-label">Weight Left</div><div class="wc-goal-val" style="color:var(--text);font-size:22px">${kgLeftProjected} <span style="font-size:14px;color:var(--muted)">kg to go</span></div><div class="wc-goal-sub">Based on last 2-week avg · ${Math.abs(avgDailyLoss).toFixed(2)} kg/day</div></div>
+        <div class="wc-goal-row"><div class="wc-goal-label">Weight Left</div><div class="wc-goal-val" style="color:var(--text);font-size:22px">${kgLeftProjected} <span style="font-size:14px;color:var(--muted)">kg to go</span></div><div class="wc-goal-sub">Based on last 10-day avg · <span style="color:var(--blue)">${Math.round(Math.abs(avgDailyLoss) * 1000)} g/day</span></div></div>
         <div class="wc-goal-row"><div class="wc-goal-label">Weeks to Goal</div><div class="wc-goal-val" style="color:var(--primary)">${weeksLeft} <span style="font-size:14px;color:var(--muted)">weeks</span></div></div>
         <div class="wc-goal-row"><div class="wc-goal-label">Estimated Finish</div><div class="wc-goal-val" style="color:var(--text);font-size:16px">🗓️ ${finishStr}</div></div>`;
     } else {
@@ -732,7 +732,7 @@ function expandWeightSection() {
       <div class="wc-panel wc-goal-panel" id="wc-goal-block"></div>
     </div>
     <div class="wc-grid-block" id="wc-grid-block"></div>`;
-  // wc-input listener attached dynamically in expandWeightSection()
+  document.getElementById('wc-input').addEventListener('keydown', e => { if (e.key === 'Enter') saveWeight(); });
   renderWeight();
 }
 
@@ -836,10 +836,8 @@ async function loadPrayers() {
 function derived() {
   if (!PRAYERS) return null;
   return {
-    waterOpen: addMins(PRAYERS.Maghrib, 120),
     pill1: PRAYERS.Maghrib,
     pill23: addMins(PRAYERS.Maghrib, 30),
-    pillNight: '23:30',
     pillSuhoor: addMins(PRAYERS.Fajr, -45)
   };
 }
@@ -1214,23 +1212,23 @@ function renderWeekTable() {
     for (let d = s; d <= e; d++) days.push(`${yr}-${String(mo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
     weeks.push({ label: `${mName.slice(0, 3)} ${s}–${e}`, days });
   }
-  let html = `<thead><tr><th style="text-align:left">${mName}</th><th>Health</th><th>Water</th><th>Work</th><th>Wt Δ</th><th>Hrs</th></tr></thead><tbody>`;
+  let html = `<thead><tr><th style="text-align:left">${mName}</th><th>Health</th><th>Water</th><th>Work</th><th>Avg Wt</th><th>Hrs</th></tr></thead><tbody>`;
   weeks.forEach(w => {
     const past = w.days.filter(d => new Date(d + 'T12:00:00') <= todayD);
     const isCur = past.length > 0 && past.length < w.days.length;
     if (past.length === 0) { html += `<tr><td class="wt-label-cell">${w.label}</td><td class="wt-empty">—</td><td class="wt-empty">—</td><td class="wt-empty">—</td><td class="wt-empty">—</td><td class="wt-empty">—</td></tr>`; return; }
-    let hS = 0, wS = 0, wkS = 0, cnt = 0, tS = 0, fW = null, lW = null;
+    let hS = 0, wS = 0, wkS = 0, cnt = 0, tS = 0, wtSum = 0, wtCnt = 0;
     past.forEach(d => {
       const st = DAY_CACHE[d];
       if (st) { const sc = calcScores(st); hS += sc.health; wS += sc.water; wkS += sc.work; cnt++; tS += st.work ? (st.work.short.sessions * 30 + st.work.medium.sessions * 50 + st.work.long.sessions * 90) : 0; }
       const wt = getWeight(d);
-      if (wt) { if (!fW) fW = wt; lW = wt; }
+      if (wt) { wtSum += wt; wtCnt++; }
     });
     const aH = cnt ? Math.round(hS / cnt) : 0, aW = cnt ? Math.round(wS / cnt) : 0, aWk = cnt ? Math.round(wkS / cnt) : 0;
-    const wd = (fW && lW) ? (lW - fW).toFixed(1) : null;
+    const avgWt = wtCnt > 0 ? (wtSum / wtCnt).toFixed(1) : null;
     const dH = (tS / 60).toFixed(1);
     const pc = v => v >= 70 ? 'wt-pct-good' : v >= 40 ? 'wt-pct-ok' : 'wt-pct-bad';
-    html += `<tr class="${isCur ? 'wt-current' : ''}"><td class="wt-label-cell">${w.label}</td><td class="${pc(aH)}">${aH}%</td><td class="${pc(aW)}">${aW}%</td><td class="${pc(aWk)}">${aWk}%</td><td style="color:${wd && wd < 0 ? 'var(--green)' : wd > 0 ? 'var(--red)' : 'var(--muted)'}">${wd ? (wd > 0 ? '+' : '') + wd + 'kg' : '—'}</td><td>${dH}h</td></tr>`;
+    html += `<tr class="${isCur ? 'wt-current' : ''}"><td class="wt-label-cell">${w.label}</td><td class="${pc(aH)}">${aH}%</td><td class="${pc(aW)}">${aW}%</td><td class="${pc(aWk)}">${aWk}%</td><td style="color:var(--blue)">${avgWt ? avgWt + ' kg' : '—'}</td><td>${dH}h</td></tr>`;
   });
   html += '</tbody>';
   document.getElementById('week-table').innerHTML = html;
